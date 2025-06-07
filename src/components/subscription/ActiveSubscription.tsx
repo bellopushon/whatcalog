@@ -449,7 +449,7 @@ export default function ActiveSubscription() {
       </div>
       <div className="bg-gradient-to-r from-purple-50 to-pink-50 admin-dark:from-gray-700 admin-dark:to-gray-700 rounded-lg p-4 mb-6">
         <div className="text-center">
-          <div className="text-2xl font-bold text-gray-900 admin-dark:text-white mb-1">$9.99/mes</div>
+          <div className="text-2xl font-bold text-gray-900 admin-dark:text-blue mb-1">$9.99/mes</div>
           <p className="text-sm text-gray-600 admin-dark:text-gray-300">
             Diferencia: +$5.00/mes
           </p> 
