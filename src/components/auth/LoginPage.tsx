@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
@@ -13,7 +13,15 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-  const { dispatch } = useStore();
+  const { state } = useStore();
+
+  // ✅ SOLUCIÓN CRÍTICA: Redirigir automáticamente cuando el usuario se autentique
+  useEffect(() => {
+    if (state.isAuthenticated && !isLoading) {
+      console.log('[LoginPage] User authenticated, redirecting to admin...');
+      navigate('/admin', { replace: true });
+    }
+  }, [state.isAuthenticated, isLoading, navigate]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -78,8 +86,8 @@ export default function LoginPage() {
           return;
         }
 
-        // Si el registro fue exitoso y hay sesión, el usuario será manejado por el listener en StoreContext
-        console.log('[LoginPage] Registration successful, redirecting...');
+        // Si el registro fue exitoso y hay sesión, el useEffect manejará la redirección
+        console.log('[LoginPage] Registration successful, waiting for auth state...');
         
       } else {
         // Inicio de sesión con Supabase
@@ -96,16 +104,16 @@ export default function LoginPage() {
           return;
         }
 
-        // Si el login fue exitoso, el usuario será manejado por el listener en StoreContext
-        console.log('[LoginPage] Login successful, redirecting...');
+        // Si el login fue exitoso, el useEffect manejará la redirección
+        console.log('[LoginPage] Login successful, waiting for auth state...');
       }
       
     } catch (error) {
       console.error('Auth error:', error);
       setErrors({ general: 'Error de conexión. Por favor intenta de nuevo.' });
-    } finally {
       setIsLoading(false);
     }
+    // ✅ IMPORTANTE: No setear isLoading(false) aquí para mantener el estado de carga hasta la redirección
   };
 
   const handleInputChange = (field, value) => {
@@ -156,6 +164,7 @@ export default function LoginPage() {
                   }`}
                   placeholder="Tu nombre"
                   disabled={isLoading}
+                  required
                 />
                 {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
               </div>
@@ -176,6 +185,7 @@ export default function LoginPage() {
                   }`}
                   placeholder="tu@email.com"
                   disabled={isLoading}
+                  required
                 />
               </div>
               {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
@@ -196,6 +206,7 @@ export default function LoginPage() {
                   }`}
                   placeholder="••••••••"
                   disabled={isLoading}
+                  required
                 />
                 <button
                   type="button"
