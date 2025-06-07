@@ -423,7 +423,6 @@ export default function ActiveSubscription() {
         </div>
       )}
 
-     ```jsx
 {/* Upgrade Modal */}
 {showUpgradeModal && (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -448,33 +447,33 @@ export default function ActiveSubscription() {
           Obtén hasta 5 tiendas y 50 productos por tienda
         </p>
       </div>
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-700 rounded-lg p-4 mb-6">
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 admin-dark:from-gray-700 admin-dark:to-gray-700 rounded-lg p-4 mb-6">
         <div className="text-center">
-          <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">$9.99/mes</div>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
+          <div className="text-2xl font-bold text-gray-900 admin-dark:text-white mb-1">$9.99/mes</div>
+          <p className="text-sm text-gray-600 admin-dark:text-gray-300">
             Diferencia: +$5.00/mes
           </p>
         </div>
       </div>
-      <div className="flex gap-3">
-        <button
-          onClick={() => setShowUpgradeModal(false)}
-          className="flex-1 px-4 py-3 border border-gray-300 admin-dark:border-gray-600 text-gray-700 admin-dark:text-gray-300 rounded-lg hover:bg-gray-50 admin-dark:hover:bg-gray-700 font-medium transition-colors"
-        >
-          Cancelar
-        </button>
-        
-          href="/subscription"
-          onClick={() => setShowUpgradeModal(false)}
-          className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-colors text-center"
-        >
-          Actualizar Ahora
-        </a>
-      </div>
-    </div>
-  </div>
-)}
-```
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="flex-1 px-4 py-3 border border-gray-300 admin-dark:border-gray-600 text-gray-700 admin-dark:text-gray-300 rounded-lg hover:bg-gray-50 admin-dark:hover:bg-gray-700 font-medium transition-colors"
+              >
+                Cancelar
+              </button>
+              <a
+                href="/subscription"
+                onClick={() => setShowUpgradeModal(false)}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-colors text-center"
+              >
+                Actualizar Ahora
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Downgrade Warning Modal */}
       <DowngradeWarningModal
