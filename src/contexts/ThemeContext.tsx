@@ -60,6 +60,8 @@ interface ThemeContextType {
   borderRadius: number;
   setBorderRadius: (radius: number) => void;
   applyTheme: (paletteId: string, borderRadius?: number) => void;
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -67,6 +69,30 @@ const ThemeContext = createContext<ThemeContextType | null>(null);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [currentPalette, setCurrentPalette] = useState<ColorPalette>(COLOR_PALETTES[0]);
   const [borderRadius, setBorderRadius] = useState<number>(8);
+  
+  // Estado para dark mode
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('darkMode');
+    if (saved !== null) {
+      return JSON.parse(saved);
+    }
+    return false;
+  });
+
+  // Aplicar o quitar la clase admin-dark cuando cambie isDarkMode
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('admin-dark');
+    } else {
+      document.documentElement.classList.remove('admin-dark');
+    }
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+  }, [isDarkMode]);
+
+  // Función para cambiar entre modo claro y oscuro
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
+  };
 
   const applyTheme = (paletteId: string, newBorderRadius?: number) => {
     const palette = COLOR_PALETTES.find(p => p.id === paletteId) || COLOR_PALETTES[0];
@@ -75,7 +101,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     if (newBorderRadius !== undefined) {
       setBorderRadius(newBorderRadius);
     }
-
+    
     // Apply CSS variables
     const root = document.documentElement;
     root.style.setProperty('--color-primary', palette.primary);
@@ -94,6 +120,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       borderRadius,
       setBorderRadius,
       applyTheme,
+      isDarkMode,
+      toggleDarkMode,
     }}>
       {children}
     </ThemeContext.Provider>
