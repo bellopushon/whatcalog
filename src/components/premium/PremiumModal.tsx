@@ -68,8 +68,8 @@ export default function PremiumModal({ onClose }: PremiumModalProps) {
        <Store className="w-4 h-4 text-yellow-600 admin-dark:text-white" />
      </div>
      <div>
-       <h3 className="font-semibold text-yellow-800 admin-dark:text-white">Has alcan el límite de tu plan Gratis</h3>
-       <p className="text-sm text-yellow-700 admin-dark:text-gray-300">Actualmente tienes 1/1 tiendas. Actualiza para crear más.</p>
+       <h3 className="font-semibold text-yellow-800 admin-dark:text-white">Has alcanzado el límite de tu plan Gratis</h3>
+       <p className="text-sm text-yellow-700 admin-dark:text-white">Actualmente tienes 1/1 tiendas. Actualiza para crear más.</p>
      </div>
    </div>
  </div>
