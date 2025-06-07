@@ -8,7 +8,89 @@
   --border-radius: 8px;
 }
 
-/* Admin Dark Mode Styles - COMPLETELY FIXED */
+/* ========================================
+   PUBLIC CATALOG - ALWAYS LIGHT MODE
+   ======================================== */
+.public-catalog-root {
+  /* Force light mode colors with !important to override any dark mode styles */
+  background-color: #f9fafb !important;
+  color: #111827 !important;
+}
+
+.public-catalog-root * {
+  /* Ensure all child elements use light mode colors */
+  color: inherit !important;
+}
+
+.public-catalog-root .bg-white {
+  background-color: #ffffff !important;
+  color: #111827 !important;
+}
+
+.public-catalog-root .bg-gray-50 {
+  background-color: #f9fafb !important;
+  color: #111827 !important;
+}
+
+.public-catalog-root .bg-gray-100 {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+.public-catalog-root .bg-gray-200 {
+  background-color: #e5e7eb !important;
+  color: #111827 !important;
+}
+
+.public-catalog-root .text-gray-900 {
+  color: #111827 !important;
+}
+
+.public-catalog-root .text-gray-800 {
+  color: #1f2937 !important;
+}
+
+.public-catalog-root .text-gray-700 {
+  color: #374151 !important;
+}
+
+.public-catalog-root .text-gray-600 {
+  color: #4b5563 !important;
+}
+
+.public-catalog-root .text-gray-500 {
+  color: #6b7280 !important;
+}
+
+.public-catalog-root .text-gray-400 {
+  color: #9ca3af !important;
+}
+
+.public-catalog-root .border-gray-200 {
+  border-color: #e5e7eb !important;
+}
+
+.public-catalog-root .border-gray-300 {
+  border-color: #d1d5db !important;
+}
+
+.public-catalog-root .hover\:bg-gray-100:hover {
+  background-color: #f3f4f6 !important;
+  color: #111827 !important;
+}
+
+.public-catalog-root .hover\:bg-gray-200:hover {
+  background-color: #e5e7eb !important;
+  color: #111827 !important;
+}
+
+.public-catalog-root .hover\:text-gray-900:hover {
+  color: #111827 !important;
+}
+
+/* ========================================
+   ADMIN DARK MODE STYLES
+   ======================================== */
 .admin-dark {
   color-scheme: dark;
 }
