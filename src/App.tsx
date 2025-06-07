@@ -112,23 +112,21 @@ function AppRoutes() {
 
 function App() {
   return (
-    <div className="admin-dark"> {/* AÑADIDO: Envuelve toda la app con admin-dark */}
-      <StoreProvider>
-        <AnalyticsProvider>
-          <ThemeProvider>
-            <ToastProvider>
-              <Router>
-                <div className="min-h-screen bg-gray-50">
-                  <AppRoutes />
-                  <ToastContainer />
-                </div>
-              </Router>
-            </ToastProvider>
-          </ThemeProvider>
-        </AnalyticsProvider>
-      </StoreProvider>
-    </div>
+    <StoreProvider>
+      <AnalyticsProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <Router>
+              <div className="min-h-screen bg-gray-50">
+                <AppRoutes />
+                <ToastContainer />
+              </div>
+            </Router>
+          </ToastProvider>
+        </ThemeProvider>
+      </AnalyticsProvider>
+    </StoreProvider>
   );
 }
 
-export default App; 
+export default App;
