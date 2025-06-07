@@ -4,14 +4,7 @@ import type { Database } from './database.types';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-console.log('🔧 Configuración de Supabase:');
-console.log('URL:', supabaseUrl ? '✅ Configurada' : '❌ Faltante');
-console.log('Anon Key:', supabaseAnonKey ? '✅ Configurada' : '❌ Faltante');
-
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Variables de entorno de Supabase faltantes:');
-  console.error('VITE_SUPABASE_URL:', supabaseUrl);
-  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '[CONFIGURADA]' : '[FALTANTE]');
   throw new Error('Missing Supabase environment variables');
 }
 
@@ -23,20 +16,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   }
 });
 
-// Test connection
-supabase.from('users').select('count', { count: 'exact', head: true }).then(
-  ({ error, count }) => {
-    if (error) {
-      console.error('❌ Error de conexión a Supabase:', error);
-    } else {
-      console.log('✅ Conexión a Supabase exitosa');
-    }
-  }
-);
-
 // Helper function to handle Supabase errors
 export function handleSupabaseError(error: any, context: string = '') {
-  console.error(`❌ Error de Supabase ${context}:`, error);
+  console.error(`Supabase error ${context}:`, error);
   
   if (error?.message) {
     throw new Error(error.message);

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
+import { generateId } from '../../utils/constants';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -9,14 +10,13 @@ export default function LoginPage() {
   const [name, setName] = useState('');
   const [isRegister, setIsRegister] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [errors, setErrors] = useState<any>({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-  const { signIn, signUp, state } = useStore();
-
-  const isLoading = state.isLoading;
+  const { dispatch } = useStore();
 
   const validateForm = () => {
-    const newErrors: any = {};
+    const newErrors = {};
 
     if (!email.trim()) {
       newErrors.email = 'El email es requerido';
@@ -38,26 +38,73 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) return;
 
+    setIsLoading(true);
+
     try {
-      if (isRegister) {
-        await signUp(email.trim(), password, name.trim());
-      } else {
-        await signIn(email.trim(), password);
-      }
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const user = {
+        name: isRegister ? name.trim() : 'Usuario Demo',
+        email: email.trim(),
+        plan: 'gratuito' as const,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      dispatch({ type: 'SET_USER', payload: user });
+      
+      // Only create default store for new registrations or if no stores exist
+      const defaultStore = {
+        id: generateId(),
+        name: 'Mi Tienda',
+        slug: 'mi-tienda',
+        description: 'Catálogo de productos',
+        whatsapp: '',
+        currency: 'USD',
+        fonts: {
+          heading: 'Inter',
+          body: 'Inter',
+        },
+        theme: {
+          colorPalette: 'predeterminado',
+          mode: 'light' as const,
+          borderRadius: 8,
+          productsPerPage: 12,
+        },
+        socialMedia: {
+          showInCatalog: true,
+        },
+        paymentMethods: {
+          cash: true,
+          bankTransfer: false,
+        },
+        shippingMethods: {
+          pickup: true,
+          delivery: false,
+        },
+        products: [],
+        categories: [],
+        createdAt: new Date().toISOString(),
+      };
+
+      dispatch({ type: 'SET_STORES', payload: [defaultStore] });
+      dispatch({ type: 'SET_CURRENT_STORE', payload: defaultStore });
       
       navigate('/admin');
     } catch (error) {
-      console.error('Auth error:', error);
-      // Error is already handled by the context
+      setErrors({ general: 'Error al iniciar sesión. Por favor intenta de nuevo.' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field, value) => {
     if (field === 'email') setEmail(value);
     if (field === 'password') setPassword(value);
     if (field === 'name') setName(value);
@@ -84,6 +131,12 @@ export default function LoginPage() {
 
         {/* Form */}
         <div className="bg-white rounded-2xl shadow-xl p-8">
+          {errors.general && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{errors.general}</p>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {isRegister && (
               <div>
@@ -188,7 +241,7 @@ export default function LoginPage() {
 
         {/* Demo Info */}
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Crea tu cuenta real o inicia sesión con credenciales existentes</p>
+          <p>Demo: Usa cualquier email y contraseña para acceder</p>
         </div>
       </div>
     </div>

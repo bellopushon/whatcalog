@@ -38,29 +38,19 @@ export interface SignInData {
 class AuthService {
   async signUp({ email, password, name }: SignUpData): Promise<AuthUser> {
     try {
-      console.log('🔄 Iniciando registro de usuario...');
-      
       // 1. Crear usuario en Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            name: name
-          }
-        }
       });
 
       if (authError) {
-        console.error('❌ Error en auth signup:', authError);
-        throw new Error(authError.message);
+        handleSupabaseError(authError, 'registro de usuario');
       }
 
       if (!authData.user) {
         throw new Error('No se pudo crear el usuario');
       }
-
-      console.log('✅ Usuario creado en Auth:', authData.user.id);
 
       // 2. Crear perfil de usuario en la tabla users
       const { data: userData, error: userError } = await supabase
@@ -75,27 +65,8 @@ class AuthService {
         .single();
 
       if (userError) {
-        console.error('❌ Error creando perfil de usuario:', userError);
-        // Si el perfil ya existe, intentar obtenerlo
-        if (userError.code === '23505') { // Unique violation
-          const { data: existingUser, error: fetchError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', authData.user.id)
-            .single();
-          
-          if (fetchError) {
-            console.error('❌ Error obteniendo usuario existente:', fetchError);
-            throw new Error('Error al crear o recuperar el perfil de usuario');
-          }
-          
-          console.log('✅ Usuario existente recuperado');
-          return this.mapUserData(existingUser);
-        }
-        throw new Error(userError.message);
+        handleSupabaseError(userError, 'creación de perfil');
       }
-
-      console.log('✅ Perfil de usuario creado');
 
       // 3. Crear preferencias por defecto
       const { error: prefsError } = await supabase
@@ -109,23 +80,19 @@ class AuthService {
           timezone: 'UTC'
         });
 
-      if (prefsError && prefsError.code !== '23505') {
-        console.warn('⚠️ Error creando preferencias de usuario:', prefsError);
-      } else {
-        console.log('✅ Preferencias de usuario creadas');
+      if (prefsError) {
+        console.warn('Error creating user preferences:', prefsError);
       }
 
       return this.mapUserData(userData);
     } catch (error) {
-      console.error('❌ Error completo en signUp:', error);
+      console.error('SignUp error:', error);
       throw error;
     }
   }
 
   async signIn({ email, password }: SignInData): Promise<AuthUser> {
     try {
-      console.log('🔄 Iniciando sesión...');
-      
       // 1. Autenticar con Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
@@ -133,157 +100,69 @@ class AuthService {
       });
 
       if (authError) {
-        console.error('❌ Error en auth signin:', authError);
-        throw new Error(authError.message);
+        handleSupabaseError(authError, 'inicio de sesión');
       }
 
       if (!authData.user) {
         throw new Error('No se pudo autenticar el usuario');
       }
 
-      console.log('✅ Usuario autenticado:', authData.user.id);
+      // 2. Obtener datos del perfil
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', authData.user.id)
+        .single();
 
-      // 2. Obtener o crear datos del perfil
-      let userData = await this.getOrCreateUserProfile(authData.user);
+      if (userError) {
+        handleSupabaseError(userError, 'obtener perfil de usuario');
+      }
 
       return this.mapUserData(userData);
     } catch (error) {
-      console.error('❌ Error completo en signIn:', error);
+      console.error('SignIn error:', error);
       throw error;
     }
   }
 
   async signOut(): Promise<void> {
     try {
-      console.log('🔄 Cerrando sesión...');
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('❌ Error en signOut:', error);
-        throw new Error(error.message);
+        handleSupabaseError(error, 'cerrar sesión');
       }
-      console.log('✅ Sesión cerrada');
     } catch (error) {
-      console.error('❌ Error completo en signOut:', error);
+      console.error('SignOut error:', error);
       throw error;
     }
   }
 
   async getCurrentUser(): Promise<AuthUser | null> {
     try {
-      console.log('🔄 Obteniendo usuario actual...');
-      
-      // Obtener usuario de la sesión actual
       const { data: { user }, error: authError } = await supabase.auth.getUser();
 
       if (authError) {
-        // Si es solo que no hay sesión, retornar null sin error
-        if (authError.message === 'Auth session missing!' || 
-            authError.message.includes('session') ||
-            authError.message.includes('JWT')) {
-          console.log('ℹ️ No hay sesión activa');
-          return null;
-        }
-        console.error('❌ Error obteniendo usuario:', authError);
-        return null;
+        handleSupabaseError(authError, 'obtener usuario actual');
       }
 
       if (!user) {
-        console.log('ℹ️ No hay usuario en la sesión');
         return null;
       }
 
-      console.log('✅ Usuario encontrado en sesión:', user.id);
-
-      // Obtener o crear perfil de usuario
-      const userData = await this.getOrCreateUserProfile(user);
-      console.log('✅ Perfil de usuario obtenido');
-      return this.mapUserData(userData);
-    } catch (error) {
-      console.error('❌ Error completo en getCurrentUser:', error);
-      return null;
-    }
-  }
-
-  private async getOrCreateUserProfile(authUser: any): Promise<any> {
-    try {
-      console.log('🔄 Obteniendo perfil de usuario:', authUser.id);
-      
-      // Intentar obtener el perfil existente
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
-        .eq('id', authUser.id)
-        .limit(1);
-
-      if (userError) {
-        console.error('❌ Error obteniendo perfil de usuario:', userError);
-        throw new Error('Error al obtener el perfil de usuario');
-      }
-
-      // Si encontramos el usuario, devolverlo
-      if (userData && userData.length > 0) {
-        console.log('✅ Perfil de usuario encontrado');
-        return userData[0];
-      }
-
-      // Usuario no existe en la tabla, intentar crearlo
-      console.log('🔄 Creando perfil para usuario existente:', authUser.id);
-      
-      const { data: newUserData, error: createError } = await supabase
-        .from('users')
-        .insert({
-          id: authUser.id,
-          email: authUser.email,
-          name: authUser.user_metadata?.name || authUser.email.split('@')[0],
-          plan: 'gratuito'
-        })
-        .select()
+        .eq('id', user.id)
         .single();
 
-      if (createError) {
-        // Si hay un error de clave duplicada, significa que otro proceso creó el usuario
-        if (createError.code === '23505') {
-          console.log('🔄 Perfil ya existe, obteniendo perfil existente');
-          const { data: existingUserData, error: fetchError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', authUser.id)
-            .limit(1);
-
-          if (fetchError || !existingUserData || existingUserData.length === 0) {
-            console.error('❌ Error obteniendo perfil existente:', fetchError);
-            throw new Error('No se pudo obtener el perfil de usuario existente');
-          }
-
-          return existingUserData[0];
-        }
-        
-        console.error('❌ Error creando perfil de usuario:', createError);
-        throw new Error('No se pudo crear el perfil de usuario');
+      if (userError) {
+        handleSupabaseError(userError, 'obtener perfil de usuario');
       }
 
-      console.log('✅ Perfil de usuario creado');
-
-      // Crear preferencias por defecto para el nuevo usuario
-      const { error: prefsError } = await supabase
-        .from('user_preferences')
-        .insert({
-          user_id: authUser.id,
-          dark_mode_enabled: false,
-          email_notifications: true,
-          marketing_emails: false,
-          preferred_language: 'es',
-          timezone: 'UTC'
-        });
-
-      if (prefsError && prefsError.code !== '23505') {
-        console.warn('⚠️ Error creando preferencias de usuario:', prefsError);
-      }
-
-      return newUserData;
+      return this.mapUserData(userData);
     } catch (error) {
-      console.error('❌ Error completo en getOrCreateUserProfile:', error);
-      throw error;
+      console.error('GetCurrentUser error:', error);
+      return null;
     }
   }
 
@@ -310,8 +189,7 @@ class AuthService {
         .single();
 
       if (userError) {
-        console.error('UpdateProfile error:', userError);
-        throw new Error(userError.message);
+        handleSupabaseError(userError, 'actualizar perfil');
       }
 
       return this.mapUserData(userData);
@@ -351,8 +229,7 @@ class AuthService {
         .single();
 
       if (userError) {
-        console.error('UpdateSubscription error:', userError);
-        throw new Error(userError.message);
+        handleSupabaseError(userError, 'actualizar suscripción');
       }
 
       return this.mapUserData(userData);
@@ -381,8 +258,7 @@ class AuthService {
         .single();
 
       if (userError) {
-        console.error('CancelSubscription error:', userError);
-        throw new Error(userError.message);
+        handleSupabaseError(userError, 'cancelar suscripción');
       }
 
       return this.mapUserData(userData);
@@ -418,16 +294,9 @@ class AuthService {
   // Listener para cambios de autenticación
   onAuthStateChange(callback: (user: AuthUser | null) => void) {
     return supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔄 Cambio de estado de auth:', event, session?.user?.id);
-      
       if (session?.user) {
-        try {
-          const user = await this.getCurrentUser();
-          callback(user);
-        } catch (error) {
-          console.error('❌ Error obteniendo usuario después del cambio de auth:', error);
-          callback(null);
-        }
+        const user = await this.getCurrentUser();
+        callback(user);
       } else {
         callback(null);
       }

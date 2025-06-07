@@ -115,91 +115,55 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // Initialize app
   useEffect(() => {
     let isMounted = true;
-    let authSubscription: any = null;
 
     const initializeApp = async () => {
       try {
-        console.log('🚀 Inicializando aplicación...');
         dispatch({ type: 'SET_LOADING', payload: true });
 
         // Check if user is authenticated
         const user = await authService.getCurrentUser();
-        console.log('👤 Usuario actual:', user?.id || 'No autenticado');
         
         if (user && isMounted) {
           dispatch({ type: 'SET_USER', payload: user });
           
           // Load user's stores
-          try {
-            console.log('🏪 Cargando tiendas del usuario...');
-            const stores = await storeService.getUserStores();
-            console.log('✅ Tiendas cargadas:', stores.length);
+          const stores = await storeService.getUserStores();
+          if (isMounted) {
+            dispatch({ type: 'SET_STORES', payload: stores });
             
-            if (isMounted) {
-              dispatch({ type: 'SET_STORES', payload: stores });
-              
-              // Set first store as current if available
-              if (stores.length > 0) {
-                dispatch({ type: 'SET_CURRENT_STORE', payload: stores[0] });
-                console.log('🎯 Tienda actual establecida:', stores[0].name);
-              }
-            }
-          } catch (storeError) {
-            console.error('❌ Error cargando tiendas:', storeError);
-            // Don't throw error, just continue without stores
-            if (isMounted) {
-              dispatch({ type: 'SET_STORES', payload: [] });
+            // Set first store as current if available
+            if (stores.length > 0) {
+              dispatch({ type: 'SET_CURRENT_STORE', payload: stores[0] });
             }
           }
-        } else if (isMounted) {
-          // No user found, set empty state
-          console.log('ℹ️ No hay usuario autenticado');
-          dispatch({ type: 'SET_USER', payload: null });
-          dispatch({ type: 'SET_STORES', payload: [] });
-          dispatch({ type: 'SET_CURRENT_STORE', payload: null });
         }
       } catch (error) {
-        console.error('❌ Error en inicialización de app:', error);
-        // Even if there's an error, we should still mark as loaded
-        if (isMounted) {
-          dispatch({ type: 'SET_USER', payload: null });
-          dispatch({ type: 'SET_STORES', payload: [] });
-          dispatch({ type: 'SET_CURRENT_STORE', payload: null });
-        }
+        console.error('App initialization error:', error);
       } finally {
         if (isMounted) {
           dispatch({ type: 'SET_LOADING', payload: false });
           dispatch({ type: 'SET_LOADED', payload: true });
-          console.log('✅ Aplicación inicializada');
         }
       }
     };
 
-    // Initialize app
     initializeApp();
 
     // Listen for auth changes
-    authSubscription = authService.onAuthStateChange(async (user) => {
-      console.log('🔄 Cambio de estado de autenticación:', user?.id || 'No autenticado');
-      
+    const { data: { subscription } } = authService.onAuthStateChange(async (user) => {
       if (isMounted) {
         dispatch({ type: 'SET_USER', payload: user });
         
         if (user) {
           try {
-            console.log('🏪 Recargando tiendas después del cambio de auth...');
             const stores = await storeService.getUserStores();
             dispatch({ type: 'SET_STORES', payload: stores });
             
             if (stores.length > 0) {
               dispatch({ type: 'SET_CURRENT_STORE', payload: stores[0] });
-            } else {
-              dispatch({ type: 'SET_CURRENT_STORE', payload: null });
             }
           } catch (error) {
-            console.error('❌ Error cargando tiendas después del cambio de auth:', error);
-            dispatch({ type: 'SET_STORES', payload: [] });
-            dispatch({ type: 'SET_CURRENT_STORE', payload: null });
+            console.error('Error loading stores after auth change:', error);
           }
         } else {
           dispatch({ type: 'SET_STORES', payload: [] });
@@ -209,11 +173,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => {
-      console.log('🧹 Limpiando contexto de tienda');
       isMounted = false;
-      if (authSubscription?.data?.subscription) {
-        authSubscription.data.subscription.unsubscribe();
-      }
+      subscription?.unsubscribe();
     };
   }, []);
 

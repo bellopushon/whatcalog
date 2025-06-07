@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Package, 
@@ -27,14 +27,6 @@ export default function Dashboard() {
   const { getVisits, getOrders, getOrderValue } = useAnalytics();
   const store = state.currentStore;
 
-  // Analytics state
-  const [analyticsData, setAnalyticsData] = useState({
-    visits: 0,
-    orders: 0,
-    orderValue: 0,
-    loading: true
-  });
-
   // Default to "Hoy" for all users
   const getDefaultDateRange = (): DateRange => {
     const today = new Date();
@@ -53,43 +45,17 @@ export default function Dashboard() {
   const userPlan = state.user?.plan || 'gratuito';
   const canUseAdvancedFilters = userPlan === 'emprendedor' || userPlan === 'profesional';
 
-  // Fetch analytics data
-  useEffect(() => {
-    const fetchAnalytics = async () => {
-      if (!store) {
-        setAnalyticsData({ visits: 0, orders: 0, orderValue: 0, loading: false });
-        return;
-      }
+  // Calculate analytics for current store
+  const analytics = useMemo(() => {
+    if (!store) return { visits: 0, orders: 0, orderValue: 0 };
 
-      setAnalyticsData(prev => ({ ...prev, loading: true }));
-
-      try {
-        const dateRange = canUseAdvancedFilters ? selectedDateRange : getDefaultDateRange();
-        
-        const [visits, orders, orderValue] = await Promise.all([
-          getVisits(store.id, dateRange),
-          getOrders(store.id, dateRange),
-          getOrderValue(store.id, dateRange)
-        ]);
-
-        setAnalyticsData({
-          visits,
-          orders,
-          orderValue,
-          loading: false
-        });
-      } catch (error) {
-        console.error('Error fetching analytics:', error);
-        setAnalyticsData({
-          visits: 0,
-          orders: 0,
-          orderValue: 0,
-          loading: false
-        });
-      }
+    const dateRange = canUseAdvancedFilters ? selectedDateRange : getDefaultDateRange();
+    
+    return {
+      visits: getVisits(store.id, dateRange),
+      orders: getOrders(store.id, dateRange),
+      orderValue: getOrderValue(store.id, dateRange)
     };
-
-    fetchAnalytics();
   }, [store, selectedDateRange, canUseAdvancedFilters, getVisits, getOrders, getOrderValue]);
 
   if (!store) return null;
@@ -124,7 +90,7 @@ export default function Dashboard() {
     },
     {
       label: 'Visitas al Catálogo',
-      value: analyticsData.loading ? '...' : analyticsData.visits,
+      value: analytics.visits,
       icon: BarChart3,
       color: 'bg-purple-500',
       bgColor: 'bg-purple-50 admin-dark:bg-purple-900/20',
@@ -133,7 +99,7 @@ export default function Dashboard() {
     },
     {
       label: 'Pedidos Realizados',
-      value: analyticsData.loading ? '...' : analyticsData.orders,
+      value: analytics.orders,
       icon: MessageCircle,
       color: 'bg-indigo-500',
       bgColor: 'bg-indigo-50 admin-dark:bg-indigo-900/20',
@@ -142,7 +108,7 @@ export default function Dashboard() {
     },
     {
       label: 'Valor de Pedidos',
-      value: analyticsData.loading ? '...' : formatCurrency(analyticsData.orderValue, store.currency),
+      value: formatCurrency(analytics.orderValue, store.currency),
       icon: DollarSign,
       color: 'bg-emerald-500',
       bgColor: 'bg-emerald-50 admin-dark:bg-emerald-900/20',
