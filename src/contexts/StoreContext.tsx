@@ -1,27 +1,117 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { authService, type AuthUser } from '../services/authService';
-import { storeService, type Store } from '../services/storeService';
-import { productService, type Product } from '../services/productService';
-import { categoryService, type Category } from '../services/categoryService';
-import { useToast } from './ToastContext';
+import { MessageTemplate } from '../utils/whatsapp';
 
-export interface AppState {
-  user: AuthUser | null;
+export interface Product {
+  id: string;
+  name: string;
+  shortDescription?: string;
+  longDescription?: string;
+  price: number;
+  categoryId: string;
+  mainImage?: string;
+  gallery: string[];
+  isActive: boolean;
+  isFeatured: boolean;
+  createdAt: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface SocialMedia {
+  facebook?: string;
+  instagram?: string;
+  tiktok?: string;
+  twitter?: string;
+  showInCatalog: boolean;
+}
+
+export interface Theme {
+  colorPalette: string;
+  mode: 'light' | 'dark' | 'system';
+  borderRadius: number;
+  productsPerPage: number;
+}
+
+export interface Fonts {
+  heading: string;
+  body: string;
+}
+
+export interface PaymentMethod {
+  cash: boolean;
+  bankTransfer: boolean;
+  bankDetails?: string;
+}
+
+export interface ShippingMethod {
+  pickup: boolean;
+  delivery: boolean;
+  deliveryCost?: number;
+  deliveryZone?: string;
+}
+
+export interface Store {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  logo?: string;
+  whatsapp: string;
+  currency: string;
+  fonts: Fonts;
+  theme: Theme;
+  socialMedia: SocialMedia;
+  paymentMethods: PaymentMethod;
+  shippingMethods: ShippingMethod;
+  messageTemplate?: MessageTemplate;
+  products: Product[];
+  categories: Category[];
+  createdAt: string;
+}
+
+export interface User {
+  name: string;
+  email: string;
+  phone?: string;
+  bio?: string;
+  avatar?: string;
+  company?: string;
+  location?: string;
+  plan: 'gratuito' | 'emprendedor' | 'profesional';
+  subscriptionId?: string;
+  subscriptionStatus?: 'active' | 'canceled';
+  subscriptionStartDate?: string;
+  subscriptionEndDate?: string;
+  subscriptionCanceledAt?: string;
+  paymentMethod?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface AppState {
+  user: User | null;
   stores: Store[];
   currentStore: Store | null;
   isAuthenticated: boolean;
   isLoaded: boolean;
-  isLoading: boolean;
 }
 
 type Action =
-  | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_USER'; payload: AuthUser | null }
+  | { type: 'SET_USER'; payload: User }
   | { type: 'SET_STORES'; payload: Store[] }
-  | { type: 'SET_CURRENT_STORE'; payload: Store | null }
-  | { type: 'ADD_STORE'; payload: Store }
-  | { type: 'UPDATE_STORE'; payload: Store }
+  | { type: 'SET_CURRENT_STORE'; payload: Store }
+  | { type: 'UPDATE_STORE'; payload: Partial<Store> }
   | { type: 'DELETE_STORE'; payload: string }
+  | { type: 'ADD_PRODUCT'; payload: Product }
+  | { type: 'UPDATE_PRODUCT'; payload: Product }
+  | { type: 'DELETE_PRODUCT'; payload: string }
+  | { type: 'ADD_CATEGORY'; payload: Category }
+  | { type: 'UPDATE_CATEGORY'; payload: Category }
+  | { type: 'DELETE_CATEGORY'; payload: string }
   | { type: 'SET_LOADED'; payload: boolean }
   | { type: 'LOGOUT' };
 
@@ -31,53 +121,138 @@ const initialState: AppState = {
   currentStore: null,
   isAuthenticated: false,
   isLoaded: false,
-  isLoading: false,
 };
 
 function storeReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
-    case 'SET_LOADING':
-      return { ...state, isLoading: action.payload };
     case 'SET_USER':
-      return { 
-        ...state, 
-        user: action.payload, 
-        isAuthenticated: !!action.payload 
-      };
+      return { ...state, user: action.payload, isAuthenticated: true };
     case 'SET_STORES':
       return { ...state, stores: action.payload };
     case 'SET_CURRENT_STORE':
       return { ...state, currentStore: action.payload };
-    case 'ADD_STORE':
-      return { 
-        ...state, 
-        stores: [...state.stores, action.payload],
-        currentStore: action.payload 
-      };
-    case 'UPDATE_STORE':
-      const updatedStores = state.stores.map(store =>
-        store.id === action.payload.id ? action.payload : store
-      );
-      return {
-        ...state,
-        stores: updatedStores,
-        currentStore: state.currentStore?.id === action.payload.id 
-          ? action.payload 
-          : state.currentStore
-      };
+    case 'SET_LOADED':
+      return { ...state, isLoaded: action.payload };
     case 'DELETE_STORE':
-      const filteredStores = state.stores.filter(store => store.id !== action.payload);
+      const updatedStores = state.stores.filter(store => store.id !== action.payload);
       const newCurrentStore = state.currentStore?.id === action.payload 
-        ? (filteredStores.length > 0 ? filteredStores[0] : null)
+        ? (updatedStores.length > 0 ? updatedStores[0] : null)
         : state.currentStore;
       return {
         ...state,
-        stores: filteredStores,
+        stores: updatedStores,
         currentStore: newCurrentStore
       };
-    case 'SET_LOADED':
-      return { ...state, isLoaded: action.payload };
+    case 'UPDATE_STORE':
+      if (!state.currentStore) {
+        return state;
+      }
+      const updatedStore = { ...state.currentStore, ...action.payload };
+      const updatedStoresArray = state.stores.map(store =>
+        store.id === updatedStore.id ? updatedStore : store
+      );
+      return {
+        ...state,
+        currentStore: updatedStore,
+        stores: updatedStoresArray
+      };
+    case 'ADD_PRODUCT':
+      if (!state.currentStore) {
+        return state;
+      }
+      const storeWithNewProduct = {
+        ...state.currentStore,
+        products: [...state.currentStore.products, action.payload]
+      };
+      return {
+        ...state,
+        currentStore: storeWithNewProduct,
+        stores: state.stores.map(store =>
+          store.id === storeWithNewProduct.id ? storeWithNewProduct : store
+        )
+      };
+    case 'UPDATE_PRODUCT':
+      if (!state.currentStore) {
+        return state;
+      }
+      const storeWithUpdatedProduct = {
+        ...state.currentStore,
+        products: state.currentStore.products.map(product =>
+          product.id === action.payload.id ? action.payload : product
+        )
+      };
+      return {
+        ...state,
+        currentStore: storeWithUpdatedProduct,
+        stores: state.stores.map(store =>
+          store.id === storeWithUpdatedProduct.id ? storeWithUpdatedProduct : store
+        )
+      };
+    case 'DELETE_PRODUCT':
+      if (!state.currentStore) {
+        return state;
+      }
+      const storeWithoutProduct = {
+        ...state.currentStore,
+        products: state.currentStore.products.filter(product => product.id !== action.payload)
+      };
+      return {
+        ...state,
+        currentStore: storeWithoutProduct,
+        stores: state.stores.map(store =>
+          store.id === storeWithoutProduct.id ? storeWithoutProduct : store
+        )
+      };
+    case 'ADD_CATEGORY':
+      if (!state.currentStore) {
+        return state;
+      }
+      const storeWithNewCategory = {
+        ...state.currentStore,
+        categories: [...state.currentStore.categories, action.payload]
+      };
+      return {
+        ...state,
+        currentStore: storeWithNewCategory,
+        stores: state.stores.map(store =>
+          store.id === storeWithNewCategory.id ? storeWithNewCategory : store
+        )
+      };
+    case 'UPDATE_CATEGORY':
+      if (!state.currentStore) {
+        return state;
+      }
+      const storeWithUpdatedCategory = {
+        ...state.currentStore,
+        categories: state.currentStore.categories.map(category =>
+          category.id === action.payload.id ? action.payload : category
+        )
+      };
+      return {
+        ...state,
+        currentStore: storeWithUpdatedCategory,
+        stores: state.stores.map(store =>
+          store.id === storeWithUpdatedCategory.id ? storeWithUpdatedCategory : store
+        )
+      };
+    case 'DELETE_CATEGORY':
+      if (!state.currentStore) {
+        return state;
+      }
+      const storeWithoutCategory = {
+        ...state.currentStore,
+        categories: state.currentStore.categories.filter(category => category.id !== action.payload)
+      };
+      return {
+        ...state,
+        currentStore: storeWithoutCategory,
+        stores: state.stores.map(store =>
+          store.id === storeWithoutCategory.id ? storeWithoutCategory : store
+        )
+      };
     case 'LOGOUT':
+      // Clear localStorage on logout
+      localStorage.removeItem(STORAGE_KEY);
       return { ...initialState, isLoaded: true };
     default:
       return state;
@@ -87,327 +262,78 @@ function storeReducer(state: AppState, action: Action): AppState {
 const StoreContext = createContext<{
   state: AppState;
   dispatch: React.Dispatch<Action>;
-  // Auth actions
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  updateProfile: (updates: Partial<AuthUser>) => Promise<void>;
-  updateSubscription: (subscriptionData: any) => Promise<void>;
-  // Store actions
-  createStore: (storeData: any) => Promise<void>;
-  updateStore: (storeId: string, updates: Partial<Store>) => Promise<void>;
-  deleteStore: (storeId: string) => Promise<void>;
-  switchStore: (store: Store) => void;
-  // Product actions
-  addProduct: (productData: any) => Promise<void>;
-  updateProduct: (productId: string, updates: Partial<Product>) => Promise<void>;
-  deleteProduct: (productId: string) => Promise<void>;
-  // Category actions
-  addCategory: (categoryData: any) => Promise<void>;
-  updateCategory: (categoryId: string, updates: { name: string }) => Promise<void>;
-  deleteCategory: (categoryId: string) => Promise<void>;
 } | null>(null);
+
+const STORAGE_KEY = 'tutaviendo_data';
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(storeReducer, initialState);
-  const { error: showError, success: showSuccess } = useToast();
 
-  // Initialize app
+  // Load data from localStorage on mount (only once)
   useEffect(() => {
     let isMounted = true;
-
-    const initializeApp = async () => {
+    
+    const loadData = () => {
       try {
-        dispatch({ type: 'SET_LOADING', payload: true });
-
-        // Check if user is authenticated
-        const user = await authService.getCurrentUser();
-        
-        if (user && isMounted) {
-          dispatch({ type: 'SET_USER', payload: user });
+        const savedData = localStorage.getItem(STORAGE_KEY);
+        if (savedData && isMounted) {
+          const parsedData = JSON.parse(savedData);
           
-          // Load user's stores
-          const stores = await storeService.getUserStores();
-          if (isMounted) {
-            dispatch({ type: 'SET_STORES', payload: stores });
-            
-            // Set first store as current if available
-            if (stores.length > 0) {
-              dispatch({ type: 'SET_CURRENT_STORE', payload: stores[0] });
+          if (parsedData.user) {
+            // Add createdAt if it doesn't exist (for existing users)
+            const userWithDefaults = {
+              ...parsedData.user,
+              createdAt: parsedData.user.createdAt || new Date().toISOString(),
+            };
+            dispatch({ type: 'SET_USER', payload: userWithDefaults });
+          }
+          
+          if (parsedData.stores && Array.isArray(parsedData.stores) && parsedData.stores.length > 0) {
+            dispatch({ type: 'SET_STORES', payload: parsedData.stores });
+            // Set the first store as current if no current store is set
+            if (parsedData.stores[0]) {
+              dispatch({ type: 'SET_CURRENT_STORE', payload: parsedData.stores[0] });
             }
           }
         }
       } catch (error) {
-        console.error('App initialization error:', error);
+        console.error('Error loading data from localStorage:', error);
+        localStorage.removeItem(STORAGE_KEY);
       } finally {
         if (isMounted) {
-          dispatch({ type: 'SET_LOADING', payload: false });
           dispatch({ type: 'SET_LOADED', payload: true });
         }
       }
     };
 
-    initializeApp();
-
-    // Listen for auth changes
-    const { data: { subscription } } = authService.onAuthStateChange(async (user) => {
-      if (isMounted) {
-        dispatch({ type: 'SET_USER', payload: user });
-        
-        if (user) {
-          try {
-            const stores = await storeService.getUserStores();
-            dispatch({ type: 'SET_STORES', payload: stores });
-            
-            if (stores.length > 0) {
-              dispatch({ type: 'SET_CURRENT_STORE', payload: stores[0] });
-            }
-          } catch (error) {
-            console.error('Error loading stores after auth change:', error);
-          }
-        } else {
-          dispatch({ type: 'SET_STORES', payload: [] });
-          dispatch({ type: 'SET_CURRENT_STORE', payload: null });
-        }
-      }
-    });
+    loadData();
 
     return () => {
       isMounted = false;
-      subscription?.unsubscribe();
     };
-  }, []);
+  }, []); // Empty dependency array - only run once
 
-  // Auth actions
-  const signIn = async (email: string, password: string) => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      const user = await authService.signIn({ email, password });
-      dispatch({ type: 'SET_USER', payload: user });
-      showSuccess('¡Bienvenido!', 'Has iniciado sesión correctamente');
-    } catch (error: any) {
-      showError('Error de autenticación', error.message);
-      throw error;
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
-  };
+  // Save data to localStorage when relevant state changes (debounced)
+  useEffect(() => {
+    if (!state.isLoaded || !state.isAuthenticated) return;
 
-  const signUp = async (email: string, password: string, name: string) => {
-    try {
-      dispatch({ type: 'SET_LOADING', payload: true });
-      const user = await authService.signUp({ email, password, name });
-      dispatch({ type: 'SET_USER', payload: user });
-      showSuccess('¡Cuenta creada!', 'Tu cuenta se ha creado exitosamente');
-    } catch (error: any) {
-      showError('Error de registro', error.message);
-      throw error;
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
-    }
-  };
-
-  const signOut = async () => {
-    try {
-      await authService.signOut();
-      dispatch({ type: 'LOGOUT' });
-      showSuccess('Sesión cerrada', 'Has cerrado sesión correctamente');
-    } catch (error: any) {
-      showError('Error al cerrar sesión', error.message);
-    }
-  };
-
-  const updateProfile = async (updates: Partial<AuthUser>) => {
-    try {
-      const updatedUser = await authService.updateProfile(updates);
-      dispatch({ type: 'SET_USER', payload: updatedUser });
-      showSuccess('Perfil actualizado', 'Los cambios se han guardado correctamente');
-    } catch (error: any) {
-      showError('Error al actualizar perfil', error.message);
-      throw error;
-    }
-  };
-
-  const updateSubscription = async (subscriptionData: any) => {
-    try {
-      const updatedUser = await authService.updateSubscription(subscriptionData);
-      dispatch({ type: 'SET_USER', payload: updatedUser });
-      showSuccess('Suscripción actualizada', 'Tu plan se ha actualizado correctamente');
-    } catch (error: any) {
-      showError('Error al actualizar suscripción', error.message);
-      throw error;
-    }
-  };
-
-  // Store actions
-  const createStore = async (storeData: any) => {
-    try {
-      const newStore = await storeService.createStore(storeData);
-      dispatch({ type: 'ADD_STORE', payload: newStore });
-      showSuccess('¡Tienda creada!', 'Tu nueva tienda está lista');
-    } catch (error: any) {
-      showError('Error al crear tienda', error.message);
-      throw error;
-    }
-  };
-
-  const updateStore = async (storeId: string, updates: Partial<Store>) => {
-    try {
-      const updatedStore = await storeService.updateStore(storeId, updates);
-      dispatch({ type: 'UPDATE_STORE', payload: updatedStore });
-      showSuccess('Tienda actualizada', 'Los cambios se han guardado');
-    } catch (error: any) {
-      showError('Error al actualizar tienda', error.message);
-      throw error;
-    }
-  };
-
-  const deleteStore = async (storeId: string) => {
-    try {
-      await storeService.deleteStore(storeId);
-      dispatch({ type: 'DELETE_STORE', payload: storeId });
-      showSuccess('Tienda eliminada', 'La tienda se ha eliminado correctamente');
-    } catch (error: any) {
-      showError('Error al eliminar tienda', error.message);
-      throw error;
-    }
-  };
-
-  const switchStore = (store: Store) => {
-    dispatch({ type: 'SET_CURRENT_STORE', payload: store });
-    showSuccess('Tienda cambiada', `Ahora estás gestionando "${store.name}"`);
-  };
-
-  // Product actions
-  const addProduct = async (productData: any) => {
-    try {
-      await productService.createProduct(productData);
-      // Reload current store to get updated products
-      if (state.currentStore) {
-        const stores = await storeService.getUserStores();
-        const updatedCurrentStore = stores.find(s => s.id === state.currentStore!.id);
-        if (updatedCurrentStore) {
-          dispatch({ type: 'UPDATE_STORE', payload: updatedCurrentStore });
-        }
+    const timeoutId = setTimeout(() => {
+      try {
+        const dataToSave = {
+          user: state.user,
+          stores: state.stores,
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      } catch (error) {
+        console.error('Error saving data to localStorage:', error);
       }
-      showSuccess('¡Producto creado!', 'El producto se ha añadido al catálogo');
-    } catch (error: any) {
-      showError('Error al crear producto', error.message);
-      throw error;
-    }
-  };
+    }, 500); // Debounce saves by 500ms
 
-  const updateProduct = async (productId: string, updates: Partial<Product>) => {
-    try {
-      await productService.updateProduct(productId, updates);
-      // Reload current store to get updated products
-      if (state.currentStore) {
-        const stores = await storeService.getUserStores();
-        const updatedCurrentStore = stores.find(s => s.id === state.currentStore!.id);
-        if (updatedCurrentStore) {
-          dispatch({ type: 'UPDATE_STORE', payload: updatedCurrentStore });
-        }
-      }
-      showSuccess('Producto actualizado', 'Los cambios se han guardado');
-    } catch (error: any) {
-      showError('Error al actualizar producto', error.message);
-      throw error;
-    }
-  };
-
-  const deleteProduct = async (productId: string) => {
-    try {
-      await productService.deleteProduct(productId);
-      // Reload current store to get updated products
-      if (state.currentStore) {
-        const stores = await storeService.getUserStores();
-        const updatedCurrentStore = stores.find(s => s.id === state.currentStore!.id);
-        if (updatedCurrentStore) {
-          dispatch({ type: 'UPDATE_STORE', payload: updatedCurrentStore });
-        }
-      }
-      showSuccess('Producto eliminado', 'El producto se ha eliminado del catálogo');
-    } catch (error: any) {
-      showError('Error al eliminar producto', error.message);
-      throw error;
-    }
-  };
-
-  // Category actions
-  const addCategory = async (categoryData: any) => {
-    try {
-      await categoryService.createCategory(categoryData);
-      // Reload current store to get updated categories
-      if (state.currentStore) {
-        const stores = await storeService.getUserStores();
-        const updatedCurrentStore = stores.find(s => s.id === state.currentStore!.id);
-        if (updatedCurrentStore) {
-          dispatch({ type: 'UPDATE_STORE', payload: updatedCurrentStore });
-        }
-      }
-      showSuccess('¡Categoría creada!', 'La categoría se ha añadido');
-    } catch (error: any) {
-      showError('Error al crear categoría', error.message);
-      throw error;
-    }
-  };
-
-  const updateCategory = async (categoryId: string, updates: { name: string }) => {
-    try {
-      await categoryService.updateCategory(categoryId, updates);
-      // Reload current store to get updated categories
-      if (state.currentStore) {
-        const stores = await storeService.getUserStores();
-        const updatedCurrentStore = stores.find(s => s.id === state.currentStore!.id);
-        if (updatedCurrentStore) {
-          dispatch({ type: 'UPDATE_STORE', payload: updatedCurrentStore });
-        }
-      }
-      showSuccess('Categoría actualizada', 'Los cambios se han guardado');
-    } catch (error: any) {
-      showError('Error al actualizar categoría', error.message);
-      throw error;
-    }
-  };
-
-  const deleteCategory = async (categoryId: string) => {
-    try {
-      await categoryService.deleteCategory(categoryId);
-      // Reload current store to get updated categories
-      if (state.currentStore) {
-        const stores = await storeService.getUserStores();
-        const updatedCurrentStore = stores.find(s => s.id === state.currentStore!.id);
-        if (updatedCurrentStore) {
-          dispatch({ type: 'UPDATE_STORE', payload: updatedCurrentStore });
-        }
-      }
-      showSuccess('Categoría eliminada', 'La categoría se ha eliminado');
-    } catch (error: any) {
-      showError('Error al eliminar categoría', error.message);
-      throw error;
-    }
-  };
+    return () => clearTimeout(timeoutId);
+  }, [state.user, state.stores, state.isAuthenticated, state.isLoaded]);
 
   return (
-    <StoreContext.Provider value={{
-      state,
-      dispatch,
-      signIn,
-      signUp,
-      signOut,
-      updateProfile,
-      updateSubscription,
-      createStore,
-      updateStore,
-      deleteStore,
-      switchStore,
-      addProduct,
-      updateProduct,
-      deleteProduct,
-      addCategory,
-      updateCategory,
-      deleteCategory,
-    }}>
+    <StoreContext.Provider value={{ state, dispatch }}>
       {children}
     </StoreContext.Provider>
   );
