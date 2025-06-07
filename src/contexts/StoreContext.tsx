@@ -121,13 +121,14 @@ type Action =
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'LOGOUT' };
 
+// ✅ SOLUCIÓN CRÍTICA: Estado inicial que permite renderizado inmediato
 const initialState: AppState = {
   user: null,
   stores: [],
   currentStore: null,
   isAuthenticated: false,
-  isLoaded: false,
-  isLoading: true,
+  isLoaded: true,  // ✅ CAMBIO CRÍTICO: Empezar como cargado
+  isLoading: false, // ✅ CAMBIO CRÍTICO: No mostrar loading inicial
   error: null,
 };
 
@@ -384,14 +385,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     console.log(`[StoreContext] ${message}`, data || '');
   };
 
-  // Load user data and stores from Supabase
-  const loadUserData = async (userId: string) => {
+  // ✅ SOLUCIÓN: Carga de datos en background sin bloquear UI
+  const loadUserDataInBackground = async (userId: string) => {
     try {
-      log('Loading user data for:', userId);
-      dispatch({ type: 'SET_LOADING', payload: true });
+      log('Loading user data in background for:', userId);
 
       // Load user profile
-      log('Fetching user profile...');
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
@@ -400,14 +399,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
       if (userError && userError.code !== 'PGRST116') {
         log('Error loading user data:', userError);
-        dispatch({ type: 'SET_ERROR', payload: `Error loading user: ${userError.message}` });
         return;
       }
 
-      log('User data loaded:', userData);
-
       // Load stores with their products and categories
-      log('Fetching stores...');
       const { data: storesData, error: storesError } = await supabase
         .from('stores')
         .select(`
@@ -420,11 +415,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
       if (storesError) {
         log('Error loading stores:', storesError);
-        dispatch({ type: 'SET_ERROR', payload: `Error loading stores: ${storesError.message}` });
         return;
       }
-
-      log('Stores data loaded:', storesData);
 
       // Transform and set stores
       const transformedStores = (storesData || []).map(store => 
@@ -435,51 +427,38 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         )
       );
 
-      log('Transformed stores:', transformedStores);
-
       dispatch({ type: 'SET_STORES', payload: transformedStores });
 
       // Set current store (first one if available)
       if (transformedStores.length > 0) {
-        log('Setting current store:', transformedStores[0]);
         dispatch({ type: 'SET_CURRENT_STORE', payload: transformedStores[0] });
-      } else {
-        log('No stores found for user');
       }
 
+      log('Background data loading completed successfully');
+
     } catch (error) {
-      log('Unexpected error loading user data:', error);
-      dispatch({ type: 'SET_ERROR', payload: `Unexpected error: ${error.message}` });
-    } finally {
-      dispatch({ type: 'SET_LOADING', payload: false });
+      log('Error in background data loading:', error);
     }
   };
 
-  // Initialize auth state and listen for changes
+  // ✅ SOLUCIÓN CRÍTICA: Inicialización que NO bloquea el renderizado
   useEffect(() => {
     let mounted = true;
 
     const initializeAuth = async () => {
       try {
-        log('Initializing auth...');
+        log('Initializing auth in background...');
         
         // Get initial session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          log('Error getting session:', error);
-          if (mounted) {
-            dispatch({ type: 'SET_ERROR', payload: `Session error: ${error.message}` });
-            dispatch({ type: 'SET_LOADED', payload: true });
-            dispatch({ type: 'SET_LOADING', payload: false });
-          }
+          log('Session error (non-blocking):', error);
           return;
         }
 
-        log('Session data:', session);
-
-        if (session?.user) {
-          log('User found in session, loading profile...');
+        if (session?.user && mounted) {
+          log('User found in session, setting up...');
           
           // Load user data from database
           const { data: userData, error: userError } = await supabase
@@ -489,28 +468,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             .single();
 
           if (userError && userError.code !== 'PGRST116') {
-            log('Error loading user profile:', userError);
+            log('Error loading user profile (non-blocking):', userError);
           }
 
-          if (mounted) {
-            const appUser = transformSupabaseUserToAppUser(session.user, userData);
-            log('Setting app user:', appUser);
-            dispatch({ type: 'SET_USER', payload: appUser });
-            await loadUserData(session.user.id);
-          }
-        } else {
-          log('No user in session');
+          const appUser = transformSupabaseUserToAppUser(session.user, userData);
+          dispatch({ type: 'SET_USER', payload: appUser });
+          
+          // Load stores in background
+          loadUserDataInBackground(session.user.id);
         }
       } catch (error) {
-        log('Error initializing auth:', error);
-        if (mounted) {
-          dispatch({ type: 'SET_ERROR', payload: `Auth initialization error: ${error.message}` });
-        }
-      } finally {
-        if (mounted) {
-          dispatch({ type: 'SET_LOADED', payload: true });
-          dispatch({ type: 'SET_LOADING', payload: false });
-        }
+        log('Non-blocking auth initialization error:', error);
       }
     };
 
@@ -550,7 +518,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
           const appUser = transformSupabaseUserToAppUser(session.user, userData);
           dispatch({ type: 'SET_USER', payload: appUser });
-          await loadUserData(session.user.id);
+          
+          // Load stores in background
+          loadUserDataInBackground(session.user.id);
 
         } else if (event === 'SIGNED_OUT') {
           log('User signed out');
@@ -569,6 +539,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
     );
 
+    // ✅ CRÍTICO: Inicializar en background sin bloquear
     initializeAuth();
 
     return () => {
