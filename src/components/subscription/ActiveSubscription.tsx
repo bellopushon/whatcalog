@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { ArrowLeft, Crown, Calendar, CreditCard, Download, AlertTriangle, Check, X } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useToast } from '../../contexts/ToastContext';
+import { useTheme } from '../../contexts/ThemeContext'; // AÑADIR ESTA LÍNEA
 import DowngradeWarningModal from './DowngradeWarningModal';
 
 export default function ActiveSubscription() {
   const { state, dispatch } = useStore();
   const { success, error } = useToast();
+  const { isDarkMode } = useTheme(); // AÑADIR ESTA LÍNEA
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showDowngradeWarning, setShowDowngradeWarning] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -447,10 +449,10 @@ export default function ActiveSubscription() {
           Obtén hasta 5 tiendas y 50 productos por tienda
         </p>
       </div>
-<div className="bg-purple-100 admin-dark:bg-gray-900 rounded-lg p-4 mb-6">
+<div className={`${isDarkMode ? 'bg-gray-900' : 'bg-purple-100'} rounded-lg p-4 mb-6`}>
   <div className="text-center">
-    <div className="text-2xl font-bold text-gray-900 admin-dark:text-white mb-1">$9.99/mes</div>
-    <p className="text-sm text-gray-600 admin-dark:text-gray-300">
+    <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-1`}>$9.99/mes</div>
+    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
       Diferencia: +$5.00/mes
     </p> 
   </div>
