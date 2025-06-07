@@ -101,6 +101,7 @@ interface AppState {
   isAuthenticated: boolean;
   isLoaded: boolean;
   isLoading: boolean;
+  error: string | null;
 }
 
 type Action =
@@ -117,6 +118,7 @@ type Action =
   | { type: 'DELETE_CATEGORY'; payload: string }
   | { type: 'SET_LOADED'; payload: boolean }
   | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'LOGOUT' };
 
 const initialState: AppState = {
@@ -126,12 +128,13 @@ const initialState: AppState = {
   isAuthenticated: false,
   isLoaded: false,
   isLoading: true,
+  error: null,
 };
 
 function storeReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'SET_USER':
-      return { ...state, user: action.payload, isAuthenticated: true };
+      return { ...state, user: action.payload, isAuthenticated: true, error: null };
     case 'SET_STORES':
       return { ...state, stores: action.payload };
     case 'SET_CURRENT_STORE':
@@ -140,6 +143,8 @@ function storeReducer(state: AppState, action: Action): AppState {
       return { ...state, isLoaded: action.payload };
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
+    case 'SET_ERROR':
+      return { ...state, error: action.payload, isLoading: false };
     case 'DELETE_STORE':
       const updatedStores = state.stores.filter(store => store.id !== action.payload);
       const newCurrentStore = state.currentStore?.id === action.payload 
@@ -267,6 +272,16 @@ function storeReducer(state: AppState, action: Action): AppState {
 const StoreContext = createContext<{
   state: AppState;
   dispatch: React.Dispatch<Action>;
+  createStore?: (storeData: Partial<Store>) => Promise<Store>;
+  updateStore?: (storeId: string, updates: Partial<Store>) => Promise<void>;
+  deleteStore?: (storeId: string) => Promise<void>;
+  createProduct?: (productData: Omit<Product, 'id' | 'createdAt'>) => Promise<Product>;
+  updateProduct?: (productData: Product) => Promise<void>;
+  deleteProduct?: (productId: string) => Promise<void>;
+  createCategory?: (categoryData: Omit<Category, 'id' | 'createdAt'>) => Promise<Category>;
+  updateCategory?: (categoryData: Category) => Promise<void>;
+  deleteCategory?: (categoryId: string) => Promise<void>;
+  logout?: () => Promise<void>;
 } | null>(null);
 
 // Helper functions to transform data between Supabase and app formats
@@ -364,12 +379,19 @@ function transformSupabaseStoreToAppStore(
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(storeReducer, initialState);
 
+  // 🔍 LOGGING: Add comprehensive logging
+  const log = (message: string, data?: any) => {
+    console.log(`[StoreContext] ${message}`, data || '');
+  };
+
   // Load user data and stores from Supabase
   const loadUserData = async (userId: string) => {
     try {
+      log('Loading user data for:', userId);
       dispatch({ type: 'SET_LOADING', payload: true });
 
       // Load user profile
+      log('Fetching user profile...');
       const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
@@ -377,11 +399,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (userError && userError.code !== 'PGRST116') {
-        console.error('Error loading user data:', userError);
+        log('Error loading user data:', userError);
+        dispatch({ type: 'SET_ERROR', payload: `Error loading user: ${userError.message}` });
         return;
       }
 
+      log('User data loaded:', userData);
+
       // Load stores with their products and categories
+      log('Fetching stores...');
       const { data: storesData, error: storesError } = await supabase
         .from('stores')
         .select(`
@@ -393,9 +419,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         .order('created_at', { ascending: true });
 
       if (storesError) {
-        console.error('Error loading stores:', storesError);
+        log('Error loading stores:', storesError);
+        dispatch({ type: 'SET_ERROR', payload: `Error loading stores: ${storesError.message}` });
         return;
       }
+
+      log('Stores data loaded:', storesData);
 
       // Transform and set stores
       const transformedStores = (storesData || []).map(store => 
@@ -406,15 +435,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         )
       );
 
+      log('Transformed stores:', transformedStores);
+
       dispatch({ type: 'SET_STORES', payload: transformedStores });
 
       // Set current store (first one if available)
       if (transformedStores.length > 0) {
+        log('Setting current store:', transformedStores[0]);
         dispatch({ type: 'SET_CURRENT_STORE', payload: transformedStores[0] });
+      } else {
+        log('No stores found for user');
       }
 
     } catch (error) {
-      console.error('Error loading user data:', error);
+      log('Unexpected error loading user data:', error);
+      dispatch({ type: 'SET_ERROR', payload: `Unexpected error: ${error.message}` });
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
     }
@@ -426,34 +461,51 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
     const initializeAuth = async () => {
       try {
+        log('Initializing auth...');
+        
         // Get initial session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Error getting session:', error);
+          log('Error getting session:', error);
           if (mounted) {
+            dispatch({ type: 'SET_ERROR', payload: `Session error: ${error.message}` });
             dispatch({ type: 'SET_LOADED', payload: true });
             dispatch({ type: 'SET_LOADING', payload: false });
           }
           return;
         }
 
+        log('Session data:', session);
+
         if (session?.user) {
+          log('User found in session, loading profile...');
+          
           // Load user data from database
-          const { data: userData } = await supabase
+          const { data: userData, error: userError } = await supabase
             .from('users')
             .select('*')
             .eq('id', session.user.id)
             .single();
 
+          if (userError && userError.code !== 'PGRST116') {
+            log('Error loading user profile:', userError);
+          }
+
           if (mounted) {
             const appUser = transformSupabaseUserToAppUser(session.user, userData);
+            log('Setting app user:', appUser);
             dispatch({ type: 'SET_USER', payload: appUser });
             await loadUserData(session.user.id);
           }
+        } else {
+          log('No user in session');
         }
       } catch (error) {
-        console.error('Error initializing auth:', error);
+        log('Error initializing auth:', error);
+        if (mounted) {
+          dispatch({ type: 'SET_ERROR', payload: `Auth initialization error: ${error.message}` });
+        }
       } finally {
         if (mounted) {
           dispatch({ type: 'SET_LOADED', payload: true });
@@ -467,8 +519,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         if (!mounted) return;
 
+        log('Auth state changed:', { event, session: !!session });
+
         if (event === 'SIGNED_IN' && session?.user) {
-          // User signed in
+          log('User signed in, creating/updating profile...');
+          
+          // Create or update user profile in database
+          const { error: upsertError } = await supabase
+            .from('users')
+            .upsert({
+              id: session.user.id,
+              email: session.user.email!,
+              name: session.user.user_metadata?.name || session.user.email!.split('@')[0],
+              plan: 'gratuito',
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'id'
+            });
+
+          if (upsertError) {
+            log('Error upserting user:', upsertError);
+          }
+
+          // Load user data from database
           const { data: userData } = await supabase
             .from('users')
             .select('*')
@@ -479,13 +552,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           dispatch({ type: 'SET_USER', payload: appUser });
           await loadUserData(session.user.id);
 
-          // Navigate to admin after successful login
-          window.location.href = '/admin';
         } else if (event === 'SIGNED_OUT') {
-          // User signed out
+          log('User signed out');
           dispatch({ type: 'LOGOUT' });
         } else if (event === 'USER_UPDATED' && session?.user) {
-          // User data updated
+          log('User updated');
           const { data: userData } = await supabase
             .from('users')
             .select('*')
@@ -509,6 +580,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // CRUD Operations for Stores
   const createStore = async (storeData: Partial<Store>) => {
     try {
+      log('Creating store:', storeData);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
@@ -557,15 +629,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       dispatch({ type: 'SET_STORES', payload: [...state.stores, newStore] });
       dispatch({ type: 'SET_CURRENT_STORE', payload: newStore });
 
+      log('Store created successfully:', newStore);
       return newStore;
     } catch (error) {
-      console.error('Error creating store:', error);
+      log('Error creating store:', error);
       throw error;
     }
   };
 
   const updateStore = async (storeId: string, updates: Partial<Store>) => {
     try {
+      log('Updating store:', { storeId, updates });
+      
       const updateData: TablesUpdate<'stores'> = {
         name: updates.name,
         slug: updates.slug,
@@ -606,14 +681,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
 
       dispatch({ type: 'UPDATE_STORE', payload: updates });
+      log('Store updated successfully');
     } catch (error) {
-      console.error('Error updating store:', error);
+      log('Error updating store:', error);
       throw error;
     }
   };
 
   const deleteStore = async (storeId: string) => {
     try {
+      log('Deleting store:', storeId);
+      
       const { error } = await supabase
         .from('stores')
         .delete()
@@ -622,8 +700,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
 
       dispatch({ type: 'DELETE_STORE', payload: storeId });
+      log('Store deleted successfully');
     } catch (error) {
-      console.error('Error deleting store:', error);
+      log('Error deleting store:', error);
       throw error;
     }
   };
@@ -631,6 +710,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // CRUD Operations for Products
   const createProduct = async (productData: Omit<Product, 'id' | 'createdAt'>) => {
     try {
+      log('Creating product:', productData);
       if (!state.currentStore) throw new Error('No current store selected');
 
       const insertData: TablesInsert<'products'> = {
@@ -669,15 +749,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       };
 
       dispatch({ type: 'ADD_PRODUCT', payload: newProduct });
+      log('Product created successfully:', newProduct);
       return newProduct;
     } catch (error) {
-      console.error('Error creating product:', error);
+      log('Error creating product:', error);
       throw error;
     }
   };
 
   const updateProduct = async (productData: Product) => {
     try {
+      log('Updating product:', productData);
+      
       const updateData: TablesUpdate<'products'> = {
         category_id: productData.categoryId || null,
         name: productData.name,
@@ -698,14 +781,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
 
       dispatch({ type: 'UPDATE_PRODUCT', payload: productData });
+      log('Product updated successfully');
     } catch (error) {
-      console.error('Error updating product:', error);
+      log('Error updating product:', error);
       throw error;
     }
   };
 
   const deleteProduct = async (productId: string) => {
     try {
+      log('Deleting product:', productId);
+      
       const { error } = await supabase
         .from('products')
         .delete()
@@ -714,8 +800,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
 
       dispatch({ type: 'DELETE_PRODUCT', payload: productId });
+      log('Product deleted successfully');
     } catch (error) {
-      console.error('Error deleting product:', error);
+      log('Error deleting product:', error);
       throw error;
     }
   };
@@ -723,6 +810,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // CRUD Operations for Categories
   const createCategory = async (categoryData: Omit<Category, 'id' | 'createdAt'>) => {
     try {
+      log('Creating category:', categoryData);
       if (!state.currentStore) throw new Error('No current store selected');
 
       const insertData: TablesInsert<'categories'> = {
@@ -745,15 +833,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       };
 
       dispatch({ type: 'ADD_CATEGORY', payload: newCategory });
+      log('Category created successfully:', newCategory);
       return newCategory;
     } catch (error) {
-      console.error('Error creating category:', error);
+      log('Error creating category:', error);
       throw error;
     }
   };
 
   const updateCategory = async (categoryData: Category) => {
     try {
+      log('Updating category:', categoryData);
+      
       const { error } = await supabase
         .from('categories')
         .update({ name: categoryData.name })
@@ -762,14 +853,17 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
 
       dispatch({ type: 'UPDATE_CATEGORY', payload: categoryData });
+      log('Category updated successfully');
     } catch (error) {
-      console.error('Error updating category:', error);
+      log('Error updating category:', error);
       throw error;
     }
   };
 
   const deleteCategory = async (categoryId: string) => {
     try {
+      log('Deleting category:', categoryId);
+      
       const { error } = await supabase
         .from('categories')
         .delete()
@@ -778,8 +872,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
 
       dispatch({ type: 'DELETE_CATEGORY', payload: categoryId });
+      log('Category deleted successfully');
     } catch (error) {
-      console.error('Error deleting category:', error);
+      log('Error deleting category:', error);
       throw error;
     }
   };
@@ -787,12 +882,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // Logout function
   const logout = async () => {
     try {
+      log('Logging out...');
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
       dispatch({ type: 'LOGOUT' });
+      log('Logout successful');
     } catch (error) {
-      console.error('Error signing out:', error);
+      log('Error signing out:', error);
       throw error;
     }
   };

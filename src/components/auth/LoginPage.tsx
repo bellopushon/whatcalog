@@ -47,6 +47,8 @@ export default function LoginPage() {
     setErrors({});
 
     try {
+      console.log('[LoginPage] Attempting auth:', { isRegister, email });
+      
       if (isRegister) {
         // Registro con Supabase
         const { data, error } = await supabase.auth.signUp({
@@ -59,6 +61,8 @@ export default function LoginPage() {
             }
           }
         });
+
+        console.log('[LoginPage] Registration result:', { data, error });
 
         if (error) {
           console.error('Registration error:', error);
@@ -75,6 +79,7 @@ export default function LoginPage() {
         }
 
         // Si el registro fue exitoso y hay sesión, el usuario será manejado por el listener en StoreContext
+        console.log('[LoginPage] Registration successful, redirecting...');
         
       } else {
         // Inicio de sesión con Supabase
@@ -83,6 +88,8 @@ export default function LoginPage() {
           password: password
         });
 
+        console.log('[LoginPage] Login result:', { data, error });
+
         if (error) {
           console.error('Login error:', error);
           setErrors({ general: 'Email o contraseña incorrectos.' });
@@ -90,6 +97,7 @@ export default function LoginPage() {
         }
 
         // Si el login fue exitoso, el usuario será manejado por el listener en StoreContext
+        console.log('[LoginPage] Login successful, redirecting...');
       }
       
     } catch (error) {

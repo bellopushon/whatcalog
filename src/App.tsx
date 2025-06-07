@@ -32,13 +32,32 @@ import PublicCatalog from './components/catalog/PublicCatalog';
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { state } = useStore();
   
+  // 🔍 LOGGING: Add debug info
+  console.log('[ProtectedRoute] State:', {
+    isLoaded: state.isLoaded,
+    isAuthenticated: state.isAuthenticated,
+    isLoading: state.isLoading,
+    error: state.error,
+    user: !!state.user
+  });
+  
   // Show loading while data is being loaded
-  if (!state.isLoaded) {
+  if (!state.isLoaded || state.isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando...</p>
+          <p className="text-gray-600">
+            {state.error ? `Error: ${state.error}` : 'Cargando...'}
+          </p>
+          {state.error && (
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              Reintentar
+            </button>
+          )}
         </div>
       </div>
     );
@@ -87,13 +106,31 @@ function AppRoutes() {
     }
   }, [location.pathname, isDarkMode]);
   
+  // 🔍 LOGGING: Add debug info for routes
+  console.log('[AppRoutes] Current state:', {
+    isLoaded: state.isLoaded,
+    isAuthenticated: state.isAuthenticated,
+    isLoading: state.isLoading,
+    pathname: location.pathname
+  });
+  
   // Show loading while data is being loaded
-  if (!state.isLoaded) {
+  if (!state.isLoaded || state.isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando...</p>
+          <p className="text-gray-600">
+            {state.error ? `Error: ${state.error}` : 'Inicializando aplicación...'}
+          </p>
+          {state.error && (
+            <button 
+              onClick={() => window.location.reload()} 
+              className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              Reintentar
+            </button>
+          )}
         </div>
       </div>
     );
@@ -102,7 +139,7 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/login" element={state.isAuthenticated ? <Navigate to="/admin\" replace /> : <LoginPage />} />
+      <Route path="/login" element={state.isAuthenticated ? <Navigate to="/admin" replace /> : <LoginPage />} />
       <Route path="/store/:slug" element={<PublicCatalog />} />
       
       {/* Protected Admin Routes */}
