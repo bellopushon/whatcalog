@@ -66,9 +66,7 @@ export interface CreateStoreData {
 class StoreService {
   async getUserStores(): Promise<Store[]> {
     try {
-      console.log('🔄 StoreService: Obteniendo tiendas del usuario...');
       const user = await requireAuth();
-      console.log('✅ Usuario autenticado para obtener tiendas:', user.id);
 
       const { data, error } = await supabase
         .from('stores')
@@ -77,22 +75,18 @@ class StoreService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('❌ Error en query de tiendas:', error);
         handleSupabaseError(error, 'obtener tiendas');
       }
 
-      console.log('✅ Tiendas obtenidas exitosamente:', data?.length || 0);
       return data.map(this.mapStoreData);
     } catch (error) {
-      console.error('❌ Error completo en getUserStores:', error);
+      console.error('GetUserStores error:', error);
       throw error;
     }
   }
 
   async getStoreBySlug(slug: string): Promise<Store | null> {
     try {
-      console.log('🔄 StoreService: Obteniendo tienda por slug:', slug);
-      
       const { data, error } = await supabase
         .from('stores')
         .select('*')
@@ -101,24 +95,20 @@ class StoreService {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          console.log('ℹ️ Tienda no encontrada para slug:', slug);
           return null; // Store not found
         }
-        console.error('❌ Error obteniendo tienda por slug:', error);
         handleSupabaseError(error, 'obtener tienda por slug');
       }
 
-      console.log('✅ Tienda encontrada por slug:', data?.name);
       return this.mapStoreData(data);
     } catch (error) {
-      console.error('❌ Error completo en getStoreBySlug:', error);
+      console.error('GetStoreBySlug error:', error);
       throw error;
     }
   }
 
   async createStore(storeData: CreateStoreData): Promise<Store> {
     try {
-      console.log('🔄 StoreService: Creando tienda:', storeData.name);
       const user = await requireAuth();
 
       const { data, error } = await supabase
@@ -136,21 +126,18 @@ class StoreService {
         .single();
 
       if (error) {
-        console.error('❌ Error creando tienda:', error);
         handleSupabaseError(error, 'crear tienda');
       }
 
-      console.log('✅ Tienda creada exitosamente:', data.name);
       return this.mapStoreData(data);
     } catch (error) {
-      console.error('❌ Error completo en createStore:', error);
+      console.error('CreateStore error:', error);
       throw error;
     }
   }
 
   async updateStore(storeId: string, updates: Partial<Store>): Promise<Store> {
     try {
-      console.log('🔄 StoreService: Actualizando tienda:', storeId);
       const user = await requireAuth();
 
       // Mapear los datos de la aplicación al formato de la base de datos
@@ -186,8 +173,6 @@ class StoreService {
       if (updates.includePhoneInMessage !== undefined) dbUpdates.include_phone_in_message = updates.includePhoneInMessage;
       if (updates.includeCommentsInMessage !== undefined) dbUpdates.include_comments_in_message = updates.includeCommentsInMessage;
 
-      console.log('📊 Actualizaciones a aplicar:', Object.keys(dbUpdates));
-
       const { data, error } = await supabase
         .from('stores')
         .update(dbUpdates)
@@ -197,21 +182,18 @@ class StoreService {
         .single();
 
       if (error) {
-        console.error('❌ Error actualizando tienda:', error);
         handleSupabaseError(error, 'actualizar tienda');
       }
 
-      console.log('✅ Tienda actualizada exitosamente:', data.name);
       return this.mapStoreData(data);
     } catch (error) {
-      console.error('❌ Error completo en updateStore:', error);
+      console.error('UpdateStore error:', error);
       throw error;
     }
   }
 
   async deleteStore(storeId: string): Promise<void> {
     try {
-      console.log('🔄 StoreService: Eliminando tienda:', storeId);
       const user = await requireAuth();
 
       const { error } = await supabase
@@ -221,21 +203,16 @@ class StoreService {
         .eq('user_id', user.id);
 
       if (error) {
-        console.error('❌ Error eliminando tienda:', error);
         handleSupabaseError(error, 'eliminar tienda');
       }
-
-      console.log('✅ Tienda eliminada exitosamente');
     } catch (error) {
-      console.error('❌ Error completo en deleteStore:', error);
+      console.error('DeleteStore error:', error);
       throw error;
     }
   }
 
   async checkSlugAvailability(slug: string, excludeStoreId?: string): Promise<boolean> {
     try {
-      console.log('🔄 StoreService: Verificando disponibilidad de slug:', slug);
-      
       let query = supabase
         .from('stores')
         .select('id')
@@ -248,15 +225,12 @@ class StoreService {
       const { data, error } = await query;
 
       if (error) {
-        console.error('❌ Error verificando slug:', error);
         handleSupabaseError(error, 'verificar disponibilidad de slug');
       }
 
-      const isAvailable = data.length === 0;
-      console.log('✅ Slug disponible:', isAvailable);
-      return isAvailable;
+      return data.length === 0;
     } catch (error) {
-      console.error('❌ Error completo en checkSlugAvailability:', error);
+      console.error('CheckSlugAvailability error:', error);
       throw error;
     }
   }

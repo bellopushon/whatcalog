@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate, createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { StoreProvider, useStore } from './contexts/StoreContext';
 import { AnalyticsProvider } from './contexts/AnalyticsContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -69,8 +69,8 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/login" element={state.isAuthenticated ? <Navigate to="/admin" replace /> : <LoginPage />} />
-      <Route path="/store/:slug" element={<PublicCatalog />} />
+      <Route path="/login" element={state.isAuthenticated ? <Navigate to="/admin\" replace /> : <LoginPage />} />
+      <Route path="/store/:slug\" element={<PublicCatalog />} />
       
       {/* Protected Admin Routes */}
       <Route path="/admin" element={
@@ -110,34 +110,23 @@ function AppRoutes() {
   );
 }
 
-// FIXED: Router with future flags
-const router = createBrowserRouter([
-  {
-    path: "*",
-    element: (
-      <ToastProvider>
-        <StoreProvider>
-          <AnalyticsProvider>
-            <ThemeProvider>
+function App() {
+  return (
+    <ToastProvider>
+      <StoreProvider>
+        <AnalyticsProvider>
+          <ThemeProvider>
+            <Router>
               <div className="min-h-screen bg-gray-50">
                 <AppRoutes />
                 <ToastContainer />
               </div>
-            </ThemeProvider>
-          </AnalyticsProvider>
-        </StoreProvider>
-      </ToastProvider>
-    )
-  }
-], {
-  future: {
-    v7_startTransition: true,
-    v7_relativeSplatPath: true
-  }
-});
-
-function App() {
-  return <RouterProvider router={router} />;
+            </Router>
+          </ThemeProvider>
+        </AnalyticsProvider>
+      </StoreProvider>
+    </ToastProvider>
+  );
 }
 
 export default App;
