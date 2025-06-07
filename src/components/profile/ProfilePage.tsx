@@ -488,15 +488,15 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="bg-blue-50 admin-dark:bg-blue-900/20 border border-blue-200 admin-dark:border-blue-800 rounded-lg p-4">
-                <h4 className="font-medium text-blue-900 admin-dark:text-blue-200 mb-2">Consejos de seguridad:</h4>
-                <ul className="text-sm text-blue-800 admin-dark:text-blue-300 space-y-1">
-                  <li>• Usa al menos 8 caracteres</li>
-                  <li>• Incluye mayúsculas, minúsculas y números</li>
-                  <li>• Evita información personal obvia</li>
-                  <li>• No reutilices contraseñas de otras cuentas</li>
-                </ul>
-              </div>
+           <div className="bg-blue-50 dark:bg-gray-800 border border-blue-200 dark:border-gray-700 rounded-lg p-4">
+ <h4 className="font-medium text-blue-900 dark:text-blue-400 mb-2">Consejos de seguridad:</h4>
+ <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
+   <li>• Usa al menos 8 caracteres</li>
+   <li>• Incluye mayúsculas, minúsculas y números</li>
+   <li>• Evita información personal obvia</li>
+   <li>• No reutilices contraseñas de otras cuentas</li>
+ </ul>
+</div>
 
               <div className="flex justify-end">
                 <button
