@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { ShoppingCart, Share2, Phone, Facebook, Instagram, Twitter, MessageCircle, Search, Filter } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
@@ -12,7 +12,7 @@ export default function PublicCatalog() {
   const { slug } = useParams();
   const { state } = useStore();
   const { trackVisit } = useAnalytics();
-  const { applyTheme } = useTheme();
+  const { applyTheme, isDarkMode } = useTheme();
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [cart, setCart] = useState([]);
@@ -20,12 +20,22 @@ export default function PublicCatalog() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
   const [hasTrackedVisit, setHasTrackedVisit] = useState(false);
+  
+  // Ref para capturar el estado inicial del modo oscuro
+  const initialDarkModeState = useRef(isDarkMode);
+  const darkModeWasRemoved = useRef(false);
 
   // Find store by slug
   const store = state.stores.find(s => s.slug === slug);
 
   useEffect(() => {
     if (store && !hasTrackedVisit) {
+      // FORZAR MODO CLARO: Eliminar clase admin-dark si está presente
+      if (initialDarkModeState.current && document.documentElement.classList.contains('admin-dark')) {
+        document.documentElement.classList.remove('admin-dark');
+        darkModeWasRemoved.current = true;
+      }
+
       // Track visit only once per component mount
       trackVisit(store.id);
       setHasTrackedVisit(true);
@@ -50,15 +60,21 @@ export default function PublicCatalog() {
       document.title = `${store.name} - Catálogo`;
     }
 
-    // Cleanup function to reset theme when component unmounts
+    // Cleanup function to restore dark mode if it was removed
     return () => {
+      // RESTAURAR MODO OSCURO: Si se eliminó la clase admin-dark, restaurarla
+      if (darkModeWasRemoved.current && initialDarkModeState.current) {
+        document.documentElement.classList.add('admin-dark');
+        darkModeWasRemoved.current = false;
+      }
+      
       // Reset to default theme
       const root = document.documentElement;
       root.style.setProperty('--color-primary', '#6366f1');
       root.style.setProperty('--color-secondary', '#ec4899');
       root.style.setProperty('--border-radius', '8px');
     };
-  }, [store, applyTheme, trackVisit, hasTrackedVisit]);
+  }, [store, applyTheme, trackVisit, hasTrackedVisit, isDarkMode]);
 
   if (!store) {
     return (
@@ -134,7 +150,7 @@ export default function PublicCatalog() {
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   // Get current theme colors for dynamic styling
-  const currentPalette = COLOR_PALETTES.find(p => p.id === (store.theme?.colorPalette || 'predeterminado')) || COLOR_PALETTES[0];
+  const currentPaletteData = COLOR_PALETTES.find(p => p.id === (store.theme?.colorPalette || 'predeterminado')) || COLOR_PALETTES[0];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -177,7 +193,7 @@ export default function PublicCatalog() {
                 <button
                   onClick={() => setShowCart(true)}
                   className="relative p-2 text-white rounded-lg transition-colors"
-                  style={{ backgroundColor: currentPalette.primary }}
+                  style={{ backgroundColor: currentPaletteData.primary }}
                 >
                   <ShoppingCart className="w-5 h-5" />
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -198,8 +214,8 @@ export default function PublicCatalog() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:border-transparent"
                 style={{ 
-                  '--tw-ring-color': currentPalette.primary,
-                  focusRingColor: currentPalette.primary 
+                  '--tw-ring-color': currentPaletteData.primary,
+                  focusRingColor: currentPaletteData.primary 
                 }}
                 autoFocus
               />
@@ -220,7 +236,7 @@ export default function PublicCatalog() {
                     ? 'text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
-                style={!selectedCategory ? { backgroundColor: currentPalette.primary } : {}}
+                style={!selectedCategory ? { backgroundColor: currentPaletteData.primary } : {}}
               >
                 Todos ({activeProducts.length})
               </button>
@@ -235,7 +251,7 @@ export default function PublicCatalog() {
                         ? 'text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
-                    style={selectedCategory === category.id ? { backgroundColor: currentPalette.primary } : {}}
+                    style={selectedCategory === category.id ? { backgroundColor: currentPaletteData.primary } : {}}
                   >
                     {category.name} ({categoryProductCount})
                   </button>
@@ -271,7 +287,7 @@ export default function PublicCatalog() {
                   setSelectedCategory('');
                 }}
                 className="mt-4 font-medium transition-colors"
-                style={{ color: currentPalette.primary }}
+                style={{ color: currentPaletteData.primary }}
               >
                 Ver todos los productos
               </button>
@@ -326,7 +342,7 @@ export default function PublicCatalog() {
                       className="font-medium text-gray-900 text-sm leading-tight mb-2 cursor-pointer transition-colors line-clamp-2"
                       onClick={() => setSelectedProduct(product)}
                       style={{ 
-                        ':hover': { color: currentPalette.primary }
+                        ':hover': { color: currentPaletteData.primary }
                       }}
                     >
                       {product.name}
@@ -345,7 +361,7 @@ export default function PublicCatalog() {
                       <button
                         onClick={() => addToCart(product)}
                         className="text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:opacity-90"
-                        style={{ backgroundColor: currentPalette.primary }}
+                        style={{ backgroundColor: currentPaletteData.primary }}
                       >
                         +
                       </button>
