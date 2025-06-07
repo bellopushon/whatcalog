@@ -56,14 +56,18 @@ function AppRoutes() {
   const { isDarkMode } = useTheme();
   const location = useLocation();
   
-  // Control dark mode based on current route
+  // ✅ CRITICAL FIX: Force light mode for public catalog
   useEffect(() => {
     const isPublicCatalog = location.pathname.startsWith('/store/');
     
     if (isPublicCatalog) {
-      // Force light mode for public catalog
+      // Force light mode for public catalog - REMOVE admin-dark completely
       document.documentElement.classList.remove('admin-dark');
+      // Add public catalog light mode class
+      document.documentElement.classList.add('public-catalog-light');
     } else {
+      // Remove public catalog class for admin routes
+      document.documentElement.classList.remove('public-catalog-light');
       // Apply user's dark mode preference for admin routes
       if (isDarkMode) {
         document.documentElement.classList.add('admin-dark');
