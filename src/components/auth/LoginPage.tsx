@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
-import { generateId } from '../../utils/constants';
+import { supabase } from '../../lib/supabase';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -44,61 +44,57 @@ export default function LoginPage() {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setErrors({});
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (isRegister) {
+        // Registro con Supabase
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password: password,
+          options: {
+            data: {
+              name: name.trim(),
+              plan: 'gratuito'
+            }
+          }
+        });
 
-      const user = {
-        name: isRegister ? name.trim() : 'Usuario Demo',
-        email: email.trim(),
-        plan: 'gratuito' as const,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+        if (error) {
+          console.error('Registration error:', error);
+          setErrors({ general: error.message || 'Error al crear la cuenta. Intenta de nuevo.' });
+          return;
+        }
 
-      dispatch({ type: 'SET_USER', payload: user });
+        if (data.user && !data.session) {
+          // Email confirmation required
+          setErrors({ 
+            general: 'Te hemos enviado un email de confirmación. Por favor revisa tu bandeja de entrada.' 
+          });
+          return;
+        }
+
+        // Si el registro fue exitoso y hay sesión, el usuario será manejado por el listener en StoreContext
+        
+      } else {
+        // Inicio de sesión con Supabase
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password: password
+        });
+
+        if (error) {
+          console.error('Login error:', error);
+          setErrors({ general: 'Email o contraseña incorrectos.' });
+          return;
+        }
+
+        // Si el login fue exitoso, el usuario será manejado por el listener en StoreContext
+      }
       
-      // Only create default store for new registrations or if no stores exist
-      const defaultStore = {
-        id: generateId(),
-        name: 'Mi Tienda',
-        slug: 'mi-tienda',
-        description: 'Catálogo de productos',
-        whatsapp: '',
-        currency: 'USD',
-        fonts: {
-          heading: 'Inter',
-          body: 'Inter',
-        },
-        theme: {
-          colorPalette: 'predeterminado',
-          mode: 'light' as const,
-          borderRadius: 8,
-          productsPerPage: 12,
-        },
-        socialMedia: {
-          showInCatalog: true,
-        },
-        paymentMethods: {
-          cash: true,
-          bankTransfer: false,
-        },
-        shippingMethods: {
-          pickup: true,
-          delivery: false,
-        },
-        products: [],
-        categories: [],
-        createdAt: new Date().toISOString(),
-      };
-
-      dispatch({ type: 'SET_STORES', payload: [defaultStore] });
-      dispatch({ type: 'SET_CURRENT_STORE', payload: defaultStore });
-      
-      navigate('/admin');
     } catch (error) {
-      setErrors({ general: 'Error al iniciar sesión. Por favor intenta de nuevo.' });
+      console.error('Auth error:', error);
+      setErrors({ general: 'Error de conexión. Por favor intenta de nuevo.' });
     } finally {
       setIsLoading(false);
     }
@@ -241,7 +237,7 @@ export default function LoginPage() {
 
         {/* Demo Info */}
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Demo: Usa cualquier email y contraseña para acceder</p>
+          <p>Conectado a Supabase para autenticación segura</p>
         </div>
       </div>
     </div>
