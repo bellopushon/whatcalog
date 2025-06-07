@@ -423,59 +423,58 @@ export default function ActiveSubscription() {
         </div>
       )}
 
-      {/* Upgrade Modal */}
-      {showUpgradeModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white admin-dark:bg-gray-800 rounded-2xl max-w-md w-full p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-gray-900 admin-dark:text-white">Actualizar Plan</h2>
-              <button
-                onClick={() => setShowUpgradeModal(false)}
-                className="p-2 hover:bg-gray-100 admin-dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 admin-dark:from-purple-900/30 admin-dark:to-pink-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Crown className="w-8 h-8 text-purple-600 admin-dark:text-purple-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-2">
-                Actualizar a Plan Profesional
-              </h3>
-              <p className="text-gray-600 admin-dark:text-gray-300">
-                Obtén hasta 5 tiendas y 50 productos por tienda
-              </p>
-            </div>
-
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 admin-dark:from-purple-900/20 admin-dark:to-pink-900/20 rounded-lg p-4 mb-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900 admin-dark:text-white mb-1">$9.99/mes</div>
-                <p className="text-sm text-gray-600 admin-dark:text-gray-300">
-                  Diferencia: +$5.00/mes
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowUpgradeModal(false)}
-                className="flex-1 px-4 py-3 border border-gray-300 admin-dark:border-gray-600 text-gray-700 admin-dark:text-gray-300 rounded-lg hover:bg-gray-50 admin-dark:hover:bg-gray-700 font-medium transition-colors"
-              >
-                Cancelar
-              </button>
-              <a
-                href="/subscription"
-                onClick={() => setShowUpgradeModal(false)}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-colors text-center"
-              >
-                Actualizar Ahora
-              </a>
-            </div>
-          </div>
+     ```jsx
+{/* Upgrade Modal */}
+{showUpgradeModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="bg-white admin-dark:bg-gray-800 rounded-2xl max-w-md w-full p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-bold text-gray-900 admin-dark:text-white">Actualizar Plan</h2>
+        <button
+          onClick={() => setShowUpgradeModal(false)}
+          className="p-2 hover:bg-gray-100 admin-dark:hover:bg-gray-700 rounded-lg transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
+      <div className="text-center mb-6">
+        <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 admin-dark:from-purple-900/30 admin-dark:to-pink-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+          <Crown className="w-8 h-8 text-purple-600 admin-dark:text-purple-400" />
         </div>
-      )}
+        <h3 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-2">
+          Actualizar a Plan Profesional
+        </h3>
+        <p className="text-gray-600 admin-dark:text-gray-300">
+          Obtén hasta 5 tiendas y 50 productos por tienda
+        </p>
+      </div>
+      <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-gray-700 dark:to-gray-700 rounded-lg p-4 mb-6">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-gray-900 dark:text-white mb-1">$9.99/mes</div>
+          <p className="text-sm text-gray-600 dark:text-gray-300">
+            Diferencia: +$5.00/mes
+          </p>
+        </div>
+      </div>
+      <div className="flex gap-3">
+        <button
+          onClick={() => setShowUpgradeModal(false)}
+          className="flex-1 px-4 py-3 border border-gray-300 admin-dark:border-gray-600 text-gray-700 admin-dark:text-gray-300 rounded-lg hover:bg-gray-50 admin-dark:hover:bg-gray-700 font-medium transition-colors"
+        >
+          Cancelar
+        </button>
+        
+          href="/subscription"
+          onClick={() => setShowUpgradeModal(false)}
+          className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-colors text-center"
+        >
+          Actualizar Ahora
+        </a>
+      </div>
+    </div>
+  </div>
+)}
+```
 
       {/* Downgrade Warning Modal */}
       <DowngradeWarningModal
