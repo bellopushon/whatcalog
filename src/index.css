@@ -8,202 +8,200 @@
   --border-radius: 8px;
 }
 
-/* Admin Dark Mode Styles - COMPLETELY FIXED */
+/* ========================================
+   MODO OSCURO PARA ADMINISTRACIÓN ÚNICAMENTE
+   ======================================== */
+
+/* CRÍTICO: Solo aplicar estilos oscuros cuando la clase admin-dark está presente */
 .admin-dark {
   color-scheme: dark;
 }
 
-.admin-dark .admin-panel {
-  @apply bg-gray-900;
-}
-
-/* FIXED: Proper dark mode backgrounds - NO TRANSPARENCY */
+/* Fondos principales */
 .admin-dark .bg-white {
-  @apply bg-gray-900 border-gray-700;
+  @apply bg-gray-800 !important;
 }
 
 .admin-dark .bg-gray-50 {
-  @apply bg-gray-800;
+  @apply bg-gray-900 !important;
 }
 
 .admin-dark .bg-gray-100 {
-  @apply bg-gray-700;
+  @apply bg-gray-700 !important;
 }
 
-/* FIXED: Proper dark mode text colors - ALWAYS VISIBLE */
+.admin-dark .bg-gray-200 {
+  @apply bg-gray-600 !important;
+}
+
+/* Textos principales - ALTA VISIBILIDAD */
 .admin-dark .text-gray-900 {
-  @apply text-white;
+  @apply text-white !important;
 }
 
 .admin-dark .text-gray-800 {
-  @apply text-gray-100;
+  @apply text-gray-100 !important;
 }
 
 .admin-dark .text-gray-700 {
-  @apply text-gray-200;
+  @apply text-gray-200 !important;
 }
 
 .admin-dark .text-gray-600 {
-  @apply text-gray-300;
+  @apply text-gray-300 !important;
 }
 
 .admin-dark .text-gray-500 {
-  @apply text-gray-400;
+  @apply text-gray-400 !important;
 }
 
-/* FIXED: Proper dark mode borders */
+/* Bordes */
 .admin-dark .border-gray-200 {
-  @apply border-gray-700;
-}
-
-.admin-dark .border-gray-100 {
-  @apply border-gray-600;
+  @apply border-gray-700 !important;
 }
 
 .admin-dark .border-gray-300 {
-  @apply border-gray-600;
+  @apply border-gray-600 !important;
 }
 
-/* FIXED: Proper dark mode hover states - VISIBLE TEXT */
+.admin-dark .border-gray-100 {
+  @apply border-gray-600 !important;
+}
+
+/* Estados hover - VISIBILIDAD GARANTIZADA */
 .admin-dark .hover\:bg-gray-50:hover {
-  @apply bg-gray-800 text-white;
+  @apply bg-gray-800 text-white !important;
 }
 
 .admin-dark .hover\:bg-gray-100:hover {
-  @apply bg-gray-700 text-white;
+  @apply bg-gray-700 text-white !important;
 }
 
 .admin-dark .hover\:bg-gray-200:hover {
-  @apply bg-gray-600 text-white;
+  @apply bg-gray-600 text-white !important;
 }
 
-/* CRITICAL FIX: Mobile sidebar hover states */
 .admin-dark .hover\:text-gray-900:hover {
-  @apply text-white;
+  @apply text-white !important;
 }
 
-/* FIXED: Form elements in dark mode */
+.admin-dark .hover\:text-gray-700:hover {
+  @apply text-gray-200 !important;
+}
+
+/* Formularios */
 .admin-dark input,
 .admin-dark textarea,
 .admin-dark select {
-  @apply bg-gray-700 border-gray-600 text-white placeholder-gray-400;
+  @apply bg-gray-700 border-gray-600 text-white placeholder-gray-400 !important;
 }
 
 .admin-dark input:focus,
 .admin-dark textarea:focus,
 .admin-dark select:focus {
-  @apply border-indigo-500 ring-indigo-500;
+  @apply border-indigo-500 ring-indigo-500 !important;
 }
 
-/* FIXED: Gradient backgrounds in dark mode - SOLID COLORS ONLY */
+/* Gradientes problemáticos - CONVERTIR A SÓLIDOS */
 .admin-dark .from-green-50 {
-  --tw-gradient-from: rgb(31 41 55) !important;
+  background: rgb(31 41 55) !important;
 }
 
 .admin-dark .to-blue-50 {
-  --tw-gradient-to: rgb(17 24 39) !important;
+  background: rgb(17 24 39) !important;
 }
 
 .admin-dark .from-yellow-50 {
-  --tw-gradient-from: rgb(113 63 18) !important;
+  background: rgb(113 63 18) !important;
 }
 
 .admin-dark .to-orange-50 {
-  --tw-gradient-to: rgb(124 45 18) !important;
+  background: rgb(124 45 18) !important;
 }
 
 .admin-dark .from-indigo-50 {
-  --tw-gradient-from: rgb(31 41 55) !important;
+  background: rgb(31 41 55) !important;
 }
 
 .admin-dark .to-purple-50 {
-  --tw-gradient-to: rgb(17 24 39) !important;
+  background: rgb(17 24 39) !important;
 }
 
 .admin-dark .from-blue-50 {
-  --tw-gradient-from: rgb(31 41 55) !important;
+  background: rgb(31 41 55) !important;
 }
 
 .admin-dark .to-indigo-50 {
-  --tw-gradient-to: rgb(17 24 39) !important;
+  background: rgb(17 24 39) !important;
 }
 
-/* FIXED: Solid background colors for dark mode */
+/* Fondos de color específicos */
 .admin-dark .bg-yellow-50 {
-  @apply bg-yellow-900;
+  @apply bg-yellow-900 !important;
 }
 
 .admin-dark .bg-green-50 {
-  @apply bg-green-900;
+  @apply bg-green-900 !important;
 }
 
 .admin-dark .bg-blue-50 {
-  @apply bg-blue-900;
+  @apply bg-blue-900 !important;
 }
 
 .admin-dark .bg-indigo-50 {
-  @apply bg-gray-800;
+  @apply bg-gray-800 !important;
 }
 
 .admin-dark .bg-purple-50 {
-  @apply bg-gray-800;
-}
-
-/* CRITICAL FIX: Yellow/Amber contrast issues */
-.admin-dark .bg-amber-50 {
-  @apply bg-amber-900;
-}
-
-.admin-dark .text-amber-600 {
-  @apply text-amber-300;
-}
-
-.admin-dark .text-amber-700 {
-  @apply text-amber-300;
-}
-
-.admin-dark .text-amber-800 {
-  @apply text-amber-200;
-}
-
-.admin-dark .text-amber-900 {
-  @apply text-amber-100;
-}
-
-.admin-dark .border-amber-200 {
-  @apply border-amber-700;
-}
-
-.admin-dark .bg-amber-700 {
-  background-color: #d97706;
-}
-
-.admin-dark .hover\:bg-amber-800:hover {
-  background-color: #92400e;
-}
-
-/* FIXED: Orange contrast issues */
-.admin-dark .text-orange-600 {
-  @apply text-orange-300;
-}
-
-.admin-dark .text-orange-700 {
-  @apply text-orange-300;
-}
-
-.admin-dark .text-orange-800 {
-  @apply text-orange-200;
+  @apply bg-gray-800 !important;
 }
 
 .admin-dark .bg-orange-50 {
-  @apply bg-orange-900;
+  @apply bg-orange-900 !important;
+}
+
+/* CRÍTICO: Contraste mejorado para colores problemáticos */
+.admin-dark .bg-amber-50 {
+  @apply bg-amber-900 !important;
+}
+
+.admin-dark .text-amber-600 {
+  @apply text-amber-300 !important;
+}
+
+.admin-dark .text-amber-700 {
+  @apply text-amber-200 !important;
+}
+
+.admin-dark .text-amber-800 {
+  @apply text-amber-100 !important;
+}
+
+.admin-dark .text-amber-900 {
+  @apply text-amber-50 !important;
+}
+
+.admin-dark .border-amber-200 {
+  @apply border-amber-700 !important;
+}
+
+.admin-dark .text-orange-600 {
+  @apply text-orange-300 !important;
+}
+
+.admin-dark .text-orange-700 {
+  @apply text-orange-200 !important;
+}
+
+.admin-dark .text-orange-800 {
+  @apply text-orange-100 !important;
 }
 
 .admin-dark .border-orange-200 {
-  @apply border-orange-700;
+  @apply border-orange-700 !important;
 }
 
-/* Custom scrollbar */
+/* Scrollbar personalizada */
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -233,7 +231,7 @@
   background: #9ca3af;
 }
 
-/* Custom slider styles */
+/* Slider personalizado */
 .slider::-webkit-slider-thumb {
   appearance: none;
   height: 20px;
@@ -255,7 +253,7 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-/* Line clamp utility */
+/* Utilidades */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -263,7 +261,7 @@
   overflow: hidden;
 }
 
-/* Custom animations */
+/* Animaciones */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -279,22 +277,22 @@
   animation: fadeIn 0.3s ease-out;
 }
 
-/* Focus styles */
+/* Estilos de enfoque */
 .focus-ring {
   @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500;
 }
 
-/* Button hover effects */
+/* Efectos hover para botones */
 .btn-hover {
   @apply transition-all duration-200 ease-in-out transform hover:scale-105 hover:shadow-lg;
 }
 
-/* Card hover effects */
+/* Efectos hover para tarjetas */
 .card-hover {
   @apply transition-all duration-200 ease-in-out hover:shadow-md hover:-translate-y-1;
 }
 
-/* Custom gradient backgrounds */
+/* Fondos degradados personalizados */
 .gradient-primary {
   background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
 }
@@ -303,7 +301,7 @@
   background: linear-gradient(135deg, var(--color-secondary), var(--color-primary));
 }
 
-/* Mobile-first responsive utilities */
+/* Responsive móvil */
 @media (max-width: 640px) {
   .mobile-padding {
     @apply px-4;
@@ -314,14 +312,14 @@
   }
 }
 
-/* Print styles */
+/* Estilos de impresión */
 @media print {
   .no-print {
     display: none !important;
   }
 }
 
-/* High contrast mode support */
+/* Soporte para alto contraste */
 @media (prefers-contrast: high) {
   .border-gray-200 {
     @apply border-gray-400;
@@ -332,7 +330,7 @@
   }
 }
 
-/* Reduced motion support */
+/* Soporte para movimiento reducido */
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useState } from 'react';
 
 export interface ColorPalette {
   id: string;
@@ -70,7 +70,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [currentPalette, setCurrentPalette] = useState<ColorPalette>(COLOR_PALETTES[0]);
   const [borderRadius, setBorderRadius] = useState<number>(8);
   
-  // Estado para dark mode
+  // Estado para dark mode - SOLO ESTADO, SIN EFECTOS
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) {
@@ -79,19 +79,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return false;
   });
 
-  // Aplicar o quitar la clase admin-dark cuando cambie isDarkMode
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('admin-dark');
-    } else {
-      document.documentElement.classList.remove('admin-dark');
-    }
-    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
-  }, [isDarkMode]);
-
-  // Función para cambiar entre modo claro y oscuro
+  // Función para cambiar entre modo claro y oscuro - SOLO ACTUALIZA ESTADO
   const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
+    const newDarkMode = !isDarkMode;
+    setIsDarkMode(newDarkMode);
+    localStorage.setItem('darkMode', JSON.stringify(newDarkMode));
+    // NO aplicamos clases aquí - eso lo hace App.tsx basado en la ruta
   };
 
   const applyTheme = (paletteId: string, newBorderRadius?: number) => {
@@ -108,10 +101,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     root.style.setProperty('--color-secondary', palette.secondary);
     root.style.setProperty('--border-radius', `${newBorderRadius || borderRadius}px`);
   };
-
-  useEffect(() => {
-    applyTheme(currentPalette.id, borderRadius);
-  }, []);
 
   return (
     <ThemeContext.Provider value={{

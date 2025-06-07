@@ -56,20 +56,34 @@ function AppRoutes() {
   const { isDarkMode } = useTheme();
   const location = useLocation();
   
-  // Control dark mode based on current route
+  // SOLUCIÓN ROBUSTA: Control absoluto del modo oscuro basado en rutas
   useEffect(() => {
-    const isPublicCatalog = location.pathname.startsWith('/store/');
+    const isAdminRoute = location.pathname.startsWith('/admin') || 
+                        location.pathname === '/profile' || 
+                        location.pathname === '/subscription';
     
-    if (isPublicCatalog) {
-      // Force light mode for public catalog
+    const isPublicRoute = location.pathname.startsWith('/store/') || 
+                         location.pathname === '/login';
+    
+    // FORZAR modo claro para rutas públicas
+    if (isPublicRoute) {
       document.documentElement.classList.remove('admin-dark');
-    } else {
-      // Apply user's dark mode preference for admin routes
+      document.body.classList.remove('admin-dark');
+    }
+    // APLICAR preferencia de usuario solo en rutas de admin
+    else if (isAdminRoute) {
       if (isDarkMode) {
         document.documentElement.classList.add('admin-dark');
+        document.body.classList.add('admin-dark');
       } else {
         document.documentElement.classList.remove('admin-dark');
+        document.body.classList.remove('admin-dark');
       }
+    }
+    // LIMPIAR para cualquier otra ruta
+    else {
+      document.documentElement.classList.remove('admin-dark');
+      document.body.classList.remove('admin-dark');
     }
   }, [location.pathname, isDarkMode]);
   
@@ -88,7 +102,7 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/login" element={state.isAuthenticated ? <Navigate to="/admin\" replace /> : <LoginPage />} />
+      <Route path="/login" element={state.isAuthenticated ? <Navigate to="/admin" replace /> : <LoginPage />} />
       <Route path="/store/:slug" element={<PublicCatalog />} />
       
       {/* Protected Admin Routes */}
