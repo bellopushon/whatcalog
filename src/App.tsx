@@ -69,7 +69,7 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/login" element={state.isAuthenticated ? <Navigate to="/admin\" replace /> : <LoginPage />} />
+      <Route path="/login" element={state.isAuthenticated ? <Navigate to="/admin" replace /> : <LoginPage />} />
       <Route path="/store/:slug" element={<PublicCatalog />} />
       
       {/* Protected Admin Routes */}
@@ -112,21 +112,23 @@ function AppRoutes() {
 
 function App() {
   return (
-    <StoreProvider>
-      <AnalyticsProvider>
-        <ThemeProvider>
-          <ToastProvider>
-            <Router>
-              <div className="min-h-screen bg-gray-50">
-                <AppRoutes />
-                <ToastContainer />
-              </div>
-            </Router>
-          </ToastProvider>
-        </ThemeProvider>
-      </AnalyticsProvider>
-    </StoreProvider>
+    <div className="admin-dark"> {/* AÑADIDO: Envuelve toda la app con admin-dark */}
+      <StoreProvider>
+        <AnalyticsProvider>
+          <ThemeProvider>
+            <ToastProvider>
+              <Router>
+                <div className="min-h-screen bg-gray-50">
+                  <AppRoutes />
+                  <ToastContainer />
+                </div>
+              </Router>
+            </ToastProvider>
+          </ThemeProvider>
+        </AnalyticsProvider>
+      </StoreProvider>
+    </div>
   );
 }
 
-export default App;
+export default App; 
