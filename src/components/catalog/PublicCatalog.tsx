@@ -62,7 +62,7 @@ export default function PublicCatalog() {
 
   if (!store) {
     return (
-      <div className="public-catalog-root min-h-screen bg-gray-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div className="text-center max-w-md">
           <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
             <ShoppingCart className="w-8 h-8 text-gray-400" />
@@ -137,7 +137,7 @@ export default function PublicCatalog() {
   const currentPalette = COLOR_PALETTES.find(p => p.id === (store.theme?.colorPalette || 'predeterminado')) || COLOR_PALETTES[0];
 
   return (
-    <div className="public-catalog-root min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 py-4">
