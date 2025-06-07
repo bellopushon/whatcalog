@@ -133,16 +133,16 @@ export default function ThemeCustomizer() {
       </div>
 
       {/* Unsaved Changes Warning */}
-      {hasUnsavedChanges && (
-        <div className="bg-yellow-50 admin-dark:bg-yellow-900 border border-yellow-200 admin-dark:border-yellow-800 rounded-lg p-4">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-            <p className="text-yellow-800 admin-dark:text-yellow-200 text-sm font-medium">
-              Tienes cambios sin guardar. Haz clic en "Guardar Cambios" para aplicarlos permanentemente.
-            </p>
-          </div>
-        </div>
-      )}
+{hasUnsavedChanges && (
+ <div className="bg-yellow-50 dark:bg-gray-800 border border-yellow-200 dark:border-gray-700 rounded-lg p-4">
+   <div className="flex items-center gap-2">
+     <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+     <p className="text-yellow-800 dark:text-yellow-400 text-sm font-medium">
+       Tienes cambios sin guardar. Haz clic en "Guardar Cambios" para aplicarlos permanentemente.
+     </p>
+   </div>
+ </div>
+)}
 
       {/* Color Palettes */}
       <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
