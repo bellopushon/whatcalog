@@ -61,19 +61,18 @@ export default function PremiumModal({ onClose }: PremiumModalProps) {
 
 {/* Content */}
 <div className="p-6">
-  {/* Current Limitation */}
-  <div className="bg-yellow-50 admin-dark:bg-yellow-900 border border-yellow-200 admin-dark:border-yellow-700 rounded-lg p-4 mb-6">
-    <div className="flex items-center gap-3">
-      <div className="w-8 h-8 bg-yellow-100 admin-dark:bg-yellow-800 rounded-full flex items-center justify-center">
-        <Store className="w-4 h-4 text-yellow-600 admin-dark:text-white" />
-      </div>
-      <div>
-        <h3 className="font-semibold text-yellow-800 admin-dark:text-white">Has alcanzado el límite de tu plan Gratis</h3>
-        <p className="text-sm text-yellow-700 admin-dark:text-yellow-100">Actualmente tienes 1/1 tiendas. Actualiza para crear más.</p>
-      </div>
-    </div>
-  </div>
-</div>
+ {/* Current Limitation */}
+ <div className="bg-yellow-50 admin-dark:bg-gray-800 border border-yellow-200 admin-dark:border-gray-700 rounded-lg p-4 mb-6">
+   <div className="flex items-center gap-3">
+     <div className="w-8 h-8 bg-yellow-100 admin-dark:bg-gray-700 rounded-full flex items-center justify-center">
+       <Store className="w-4 h-4 text-yellow-600 admin-dark:text-white" />
+     </div>
+     <div>
+       <h3 className="font-semibold text-white-800 admin-dark:text-white">Has alcan el límite de tu plan Gratis</h3>
+       <p className="text-sm text-yellow-700 admin-dark:text-white">Actualmente tienes 1/1 tiendas. Actualiza para crear más.</p>
+     </div>
+   </div>
+ </div>  
 
           {/* Features List */}
           <div className="space-y-4 mb-8">
