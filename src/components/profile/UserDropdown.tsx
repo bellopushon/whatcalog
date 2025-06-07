@@ -12,6 +12,7 @@ import {
   CreditCard
 } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import StoreSelector from './StoreSelector';
 
 interface UserDropdownProps {
@@ -21,12 +22,9 @@ interface UserDropdownProps {
 export default function UserDropdown({ onEditProfile }: UserDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showStoreSelector, setShowStoreSelector] = useState(false);
-  const [darkMode, setDarkMode] = useState(() => {
-    // Check if dark mode is enabled from localStorage
-    return localStorage.getItem('admin-dark-mode') === 'true';
-  });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { state, dispatch } = useStore();
+  const { isDarkMode, toggleDarkMode } = useTheme();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -40,25 +38,9 @@ export default function UserDropdown({ onEditProfile }: UserDropdownProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Apply dark mode to admin panel only
-  useEffect(() => {
-    const adminElements = document.querySelectorAll('.admin-panel');
-    if (darkMode) {
-      document.documentElement.classList.add('admin-dark');
-      localStorage.setItem('admin-dark-mode', 'true');
-    } else {
-      document.documentElement.classList.remove('admin-dark');
-      localStorage.setItem('admin-dark-mode', 'false');
-    }
-  }, [darkMode]);
-
   const handleLogout = () => {
     dispatch({ type: 'LOGOUT' });
     setIsOpen(false);
-  };
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
   };
 
   const getInitials = (name: string) => {
@@ -223,7 +205,7 @@ export default function UserDropdown({ onEditProfile }: UserDropdownProps) {
                   onClick={toggleDarkMode}
                   className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 admin-dark:text-gray-300 hover:bg-gray-50 admin-dark:hover:bg-gray-800 hover:text-gray-900 admin-dark:hover:text-white transition-colors"
                 >
-                  {darkMode ? (
+                  {isDarkMode ? (
                     <>
                       <Sun className="w-4 h-4" />
                       Modo Claro
