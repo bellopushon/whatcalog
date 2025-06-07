@@ -447,10 +447,10 @@ export default function ActiveSubscription() {
           Obtén hasta 5 tiendas y 50 productos por tienda
         </p>
       </div>
-<div className="bg-gradient-to-r from-purple-50 to-pink-50 admin-dark:from-gray-700 admin-dark:to-gray-700 rounded-lg p-4 mb-6">
+<div className="bg-gradient-to-r from-purple-50 to-pink-50 admin-dark:bg-gray-800 rounded-lg p-4 mb-6">
   <div className="text-center">
     <div className="text-2xl font-bold text-gray-900 admin-dark:text-white mb-1">$9.99/mes</div>
-    <p className="text-sm text-gray-600 admin-dark:text-gray-400">
+    <p className="text-sm text-gray-600 admin-dark:text-gray-300">
       Diferencia: +$5.00/mes
     </p> 
   </div>
