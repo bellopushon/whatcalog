@@ -453,7 +453,7 @@ export default function ActiveSubscription() {
  <p className="text-sm text-gray-600 admin-dark:text-gray-900">
    Diferencia: +$5.00/mes
  </p> 
-</div>
+</div> 
 
             <div className="flex gap-3">
               <button
