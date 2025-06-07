@@ -1,8 +1,8 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { StoreProvider, useStore } from './contexts/StoreContext';
 import { AnalyticsProvider } from './contexts/AnalyticsContext';
-import { ThemeProvider } from './contexts/ThemeContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { ToastProvider } from './contexts/ToastContext';
 import ToastContainer from './components/ui/ToastContainer';
 
@@ -53,6 +53,25 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   const { state } = useStore();
+  const { isDarkMode } = useTheme();
+  const location = useLocation();
+  
+  // Control dark mode based on current route
+  useEffect(() => {
+    const isPublicCatalog = location.pathname.startsWith('/store/');
+    
+    if (isPublicCatalog) {
+      // Force light mode for public catalog
+      document.documentElement.classList.remove('admin-dark');
+    } else {
+      // Apply user's dark mode preference for admin routes
+      if (isDarkMode) {
+        document.documentElement.classList.add('admin-dark');
+      } else {
+        document.documentElement.classList.remove('admin-dark');
+      }
+    }
+  }, [location.pathname, isDarkMode]);
   
   // Show loading while data is being loaded
   if (!state.isLoaded) {
