@@ -1,3 +1,4 @@
+import { supabase } from '../lib/supabase';
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { supabase, type Tables, type TablesInsert, type TablesUpdate } from '../lib/supabase';
 import { MessageTemplate } from '../utils/whatsapp';
@@ -383,12 +384,37 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const { user: authUser } = useAuth();
 
 // Load stores when auth user changes
+// Initialize user data when component mounts
 useEffect(() => {
-  if (authUser?.id) {
-    dispatch({ type: 'SET_USER', payload: authUser as any });
-    loadUserDataInBackground(authUser.id);
-  }
-}, [authUser?.id]);
+  const initializeUserData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // Get user profile
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', user.id)
+          .single();
+          
+        if (userData) {
+          const appUser = transformSupabaseUserToAppUser(user, userData);
+          dispatch({ type: 'SET_USER', payload: appUser });
+          
+          // Load stores
+          await loadUserDataInBackground(user.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing user data:', error);
+    } finally {
+      dispatch({ type: 'SET_LOADED', payload: true });
+    }
+  };
+  
+  initializeUserData();
+}, []);
 
   // 🔍 LOGGING: Add comprehensive logging
   const log = (message: string, data?: any) => {
