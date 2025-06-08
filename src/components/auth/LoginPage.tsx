@@ -47,75 +47,77 @@ export default function LoginPage() {
   };
 
 const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
+  
+  if (!validateForm()) return;
+
+  setIsLoading(true);
+  setErrors({});
+
+  try {
+    console.log('[LoginPage] Attempting auth:', { isRegister, email });
     
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-    setErrors({});
-
-    try {
-      console.log('[LoginPage] Attempting auth:', { isRegister, email });
-      
-      if (isRegister) {
-        // Registro con Supabase
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password: password,
-          options: {
-            data: {
-              name: name.trim(),
-              plan: 'gratuito'
-            }
+    if (isRegister) {
+      // Registro con Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          data: {
+            name: name.trim(),
+            plan: 'gratuito'
           }
+        }
+      });
+
+      if (error) {
+        console.error('Registration error:', error);
+        setErrors({ general: error.message || 'Error al crear la cuenta. Intenta de nuevo.' });
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.user && !data.session) {
+        setErrors({ 
+          general: 'Te hemos enviado un email de confirmación. Por favor revisa tu bandeja de entrada.' 
         });
+        setIsLoading(false);
+        return;
+      }
 
-        console.log('[LoginPage] Registration result:', { data, error });
-
-        if (error) {
-          console.error('Registration error:', error);
-          setErrors({ general: error.message || 'Error al crear la cuenta. Intenta de nuevo.' });
-          setIsLoading(false);
-          return;
-        }
-
-        if (data.user && !data.session) {
-          // Email confirmation required
-          setErrors({ 
-            general: 'Te hemos enviado un email de confirmación. Por favor revisa tu bandeja de entrada.' 
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        // Si el registro fue exitoso y hay sesión, el useEffect manejará la redirección
-        console.log('[LoginPage] Registration successful, waiting for auth state...');
-        
-      } else {
-        // Inicio de sesión con Supabase
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password: password
-        });
-
-        console.log('[LoginPage] Login result:', { data, error });
-
-        if (error) {
-          console.error('Login error:', error);
-          setErrors({ general: 'Email o contraseña incorrectos.' });
-          setIsLoading(false);
-          return;
-        }
-
-        // Si el login fue exitoso, el useEffect manejará la redirección
-        console.log('[LoginPage] Login successful, waiting for auth state...');
+      // Registro exitoso con sesión activa
+      if (data.session) {
+        window.location.href = '/admin';
+        return;
       }
       
-    } catch (error) {
-      console.error('Auth error:', error);
-      setErrors({ general: 'Error de conexión. Por favor intenta de nuevo.' });
-      setIsLoading(false);
-    } 
+    } else {
+      // Inicio de sesión con Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
+      });
+
+      if (error) {
+        console.error('Login error:', error);
+        setErrors({ general: 'Email o contraseña incorrectos.' });
+        setIsLoading(false);
+        return;
+      }
+
+      // Login exitoso - redirección inmediata
+      if (data.session) {
+        console.log('[LoginPage] Login successful, redirecting...');
+        window.location.href = '/admin';
+        return;
+      }
+    }
+    
+  } catch (error) {
+    console.error('Auth error:', error);
+    setErrors({ general: 'Error de conexión. Por favor intenta de nuevo.' });
+    setIsLoading(false);
+  }
 
     // ✅ sIMPORTANTE: No setear isLoading(false) aquí para mantener el estado de carga hasta la redirección
   };
