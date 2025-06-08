@@ -118,7 +118,6 @@ const handleSubmit = async (e) => {
     setErrors({ general: 'Error de conexión. Por favor intenta de nuevo.' });
     setIsLoading(false);
   }
-};
     // ✅ sIMPORTANTE: No setear isLoading(false) aquí para mantener el estado de carga hasta la redirección
   };
 
