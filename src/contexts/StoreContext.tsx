@@ -117,7 +117,7 @@ type Action =
   | { type: 'DELETE_CATEGORY'; payload: string }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_INITIALIZED'; payload: boolean }
-  | { type: 'SET_AUTHENTICATED'; payload: boolean }
+  | { type: 'SET_AUTH_STATE'; payload: { isAuthenticated: boolean; user: User | null } }
   | { type: 'LOGOUT' };
 
 const initialState: AppState = {
@@ -138,6 +138,13 @@ function storeReducer(state: AppState, action: Action): AppState {
         isAuthenticated: true, 
         isLoading: false 
       };
+    case 'SET_AUTH_STATE':
+      return {
+        ...state,
+        isAuthenticated: action.payload.isAuthenticated,
+        user: action.payload.user,
+        isLoading: false
+      };
     case 'SET_STORES':
       return { ...state, stores: action.payload };
     case 'SET_CURRENT_STORE':
@@ -146,8 +153,6 @@ function storeReducer(state: AppState, action: Action): AppState {
       return { ...state, isLoading: action.payload };
     case 'SET_INITIALIZED':
       return { ...state, isInitialized: action.payload };
-    case 'SET_AUTHENTICATED':
-      return { ...state, isAuthenticated: action.payload };
     case 'DELETE_STORE':
       const updatedStores = state.stores.filter(store => store.id !== action.payload);
       const newCurrentStore = state.currentStore?.id === action.payload 
@@ -434,60 +439,89 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Process authenticated user
+  const processAuthenticatedUser = async (supabaseUser: SupabaseUser) => {
+    try {
+      console.log('Processing authenticated user:', supabaseUser.email);
+
+      // Create or update user profile in database
+      const { error: upsertError } = await supabase
+        .from('users')
+        .upsert({
+          id: supabaseUser.id,
+          email: supabaseUser.email!,
+          name: supabaseUser.user_metadata?.name || supabaseUser.email!.split('@')[0],
+          plan: 'gratuito',
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
+        });
+
+      if (upsertError) {
+        console.error('Error upserting user:', upsertError);
+      }
+
+      // Load user data from database
+      const { data: userData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', supabaseUser.id)
+        .single();
+
+      const appUser = transformSupabaseUserToAppUser(supabaseUser, userData);
+      
+      // Set authenticated state
+      dispatch({ 
+        type: 'SET_AUTH_STATE', 
+        payload: { 
+          isAuthenticated: true, 
+          user: appUser 
+        } 
+      });
+      
+      // Load stores
+      await loadUserData(supabaseUser.id);
+
+      console.log('User authentication processed successfully');
+    } catch (error) {
+      console.error('Error processing authenticated user:', error);
+      dispatch({ 
+        type: 'SET_AUTH_STATE', 
+        payload: { 
+          isAuthenticated: false, 
+          user: null 
+        } 
+      });
+    }
+  };
+
   // Initialize auth
   useEffect(() => {
     let mounted = true;
-    let isInitializing = false;
 
     const initAuth = async () => {
-      if (isInitializing) return;
-      isInitializing = true;
-
       try {
-        console.log('Checking for existing session...');
-        
+        console.log('Initializing authentication...');
+
+        // Get current session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Session error:', error);
           if (mounted) {
-            dispatch({ type: 'SET_LOADING', payload: false });
+            dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null } });
             dispatch({ type: 'SET_INITIALIZED', payload: true });
-            dispatch({ type: 'SET_AUTHENTICATED', payload: false });
           }
           return;
         }
 
         if (session?.user) {
           console.log('Found existing session for user:', session.user.email);
-          
-          if (mounted) {
-            dispatch({ type: 'SET_LOADING', payload: true });
-          }
-          
-          // Load user data from database
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          if (userError && userError.code !== 'PGRST116') {
-            console.error('Error loading user profile:', userError);
-          }
-
-          if (mounted) {
-            const appUser = transformSupabaseUserToAppUser(session.user, userData);
-            dispatch({ type: 'SET_USER', payload: appUser });
-            
-            // Load stores
-            await loadUserData(session.user.id);
-          }
+          await processAuthenticatedUser(session.user);
         } else {
           console.log('No existing session found');
           if (mounted) {
-            dispatch({ type: 'SET_AUTHENTICATED', payload: false });
-            dispatch({ type: 'SET_LOADING', payload: false });
+            dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null } });
           }
         }
         
@@ -497,12 +531,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       } catch (error) {
         console.error('Auth initialization error:', error);
         if (mounted) {
-          dispatch({ type: 'SET_LOADING', payload: false });
+          dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null } });
           dispatch({ type: 'SET_INITIALIZED', payload: true });
-          dispatch({ type: 'SET_AUTHENTICATED', payload: false });
         }
-      } finally {
-        isInitializing = false;
       }
     };
 
@@ -517,42 +548,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
         if (event === 'SIGNED_IN' && session?.user) {
           console.log('User signed in:', session.user.email);
-          
-          // Only process if not already authenticated to avoid double loading
-          if (!state.isAuthenticated) {
-            dispatch({ type: 'SET_LOADING', payload: true });
-            
-            // Create or update user profile in database
-            const { error: upsertError } = await supabase
-              .from('users')
-              .upsert({
-                id: session.user.id,
-                email: session.user.email!,
-                name: session.user.user_metadata?.name || session.user.email!.split('@')[0],
-                plan: 'gratuito',
-                updated_at: new Date().toISOString()
-              }, {
-                onConflict: 'id'
-              });
-
-            if (upsertError) {
-              console.error('Error upserting user:', upsertError);
-            }
-
-            // Load user data from database
-            const { data: userData } = await supabase
-              .from('users')
-              .select('*')
-              .eq('id', session.user.id)
-              .single();
-
-            const appUser = transformSupabaseUserToAppUser(session.user, userData);
-            dispatch({ type: 'SET_USER', payload: appUser });
-            
-            // Load stores
-            await loadUserData(session.user.id);
-          }
-
+          await processAuthenticatedUser(session.user);
         } else if (event === 'SIGNED_OUT') {
           console.log('User signed out');
           dispatch({ type: 'LOGOUT' });

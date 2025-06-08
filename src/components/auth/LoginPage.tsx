@@ -87,8 +87,8 @@ export default function LoginPage() {
     }
   };
 
-  // Show loading state while authenticating
-  if (state.isLoading && !state.isInitialized) {
+  // Show loading state while authenticating or not initialized
+  if (!state.isInitialized || (state.isLoading && state.isAuthenticated)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 flex items-center justify-center p-4">
         <div className="text-center">
