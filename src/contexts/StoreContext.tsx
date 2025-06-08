@@ -2,7 +2,6 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { supabase, type Tables, type TablesInsert, type TablesUpdate } from '../lib/supabase';
 import { MessageTemplate } from '../utils/whatsapp';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
-import { useAuth } from './AuthContext';
 
 export interface Product {
   id: string;
@@ -380,58 +379,6 @@ function transformSupabaseStoreToAppStore(
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(storeReducer, initialState);
-  const { user: authUser } = useAuth();
-
-// Load stores when auth user changes
-// Initialize user data when component mounts
-// Initialize user data when component mounts
-useEffect(() => {
-  const initializeUserData = async () => {
-    try {
-      // Set loading to false first so UI renders
-      dispatch({ type: 'SET_LOADED', payload: true });
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        // Get user profile
-        const { data: userData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-          
-        if (userData) {
-          const appUser = transformSupabaseUserToAppUser(user, userData);
-          dispatch({ type: 'SET_USER', payload: appUser });
-          
-          // Load stores
-          const { data: storesData } = await supabase
-            .from('stores')
-            .select('*, products(*), categories(*)')
-            .eq('user_id', user.id);
-            
-          if (storesData && storesData.length > 0) {
-            const transformedStores = storesData.map(store => 
-              transformSupabaseStoreToAppStore( 
-                store,
-                store.products || [],
-                store.categories || []
-              )
-            );
-            
-            dispatch({ type: 'SET_STORES', payload: transformedStores });
-            dispatch({ type: 'SET_CURRENT_STORE', payload: transformedStores[0] });
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error initializing user data:', error);
-    }
-  };
-  
-  initializeUserData();
-}, []);
 
   // 🔍 LOGGING: Add comprehensive logging
   const log = (message: string, data?: any) => {
@@ -495,6 +442,111 @@ useEffect(() => {
   };
 
   // ✅ SOLUCIÓN CRÍTICA: Inicialización que NO bloquea el renderizado
+  useEffect(() => {
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        log('Initializing auth in background...');
+        
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          log('Session error (non-blocking):', error);
+          return;
+        }
+
+        if (session?.user && mounted) {
+          log('User found in session, setting up...');
+          
+          // Load user data from database
+          const { data: userData, error: userError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (userError && userError.code !== 'PGRST116') {
+            log('Error loading user profile (non-blocking):', userError);
+          }
+
+          const appUser = transformSupabaseUserToAppUser(session.user, userData);
+          dispatch({ type: 'SET_USER', payload: appUser });
+          
+          // Load stores in background
+          loadUserDataInBackground(session.user.id);
+        }
+      } catch (error) {
+        log('Non-blocking auth initialization error:', error);
+      }
+    };
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+
+        log('Auth state changed:', { event, session: !!session });
+
+        if (event === 'SIGNED_IN' && session?.user) {
+          log('User signed in, creating/updating profile...');
+          
+          // Create or update user profile in database
+          const { error: upsertError } = await supabase
+            .from('users')
+            .upsert({
+              id: session.user.id,
+              email: session.user.email!,
+              name: session.user.user_metadata?.name || session.user.email!.split('@')[0],
+              plan: 'gratuito',
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'id'
+            });
+
+          if (upsertError) {
+            log('Error upserting user:', upsertError);
+          }
+
+          // Load user data from database
+          const { data: userData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          const appUser = transformSupabaseUserToAppUser(session.user, userData);
+          dispatch({ type: 'SET_USER', payload: appUser });
+          
+          // Load stores in background
+          loadUserDataInBackground(session.user.id);
+
+        } else if (event === 'SIGNED_OUT') {
+          log('User signed out');
+          dispatch({ type: 'LOGOUT' });
+        } else if (event === 'USER_UPDATED' && session?.user) {
+          log('User updated');
+          const { data: userData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          const appUser = transformSupabaseUserToAppUser(session.user, userData);
+          dispatch({ type: 'SET_USER', payload: appUser });
+        }
+      }
+    );
+
+    // ✅ CRÍTICO: Inicializar en background sin bloquear
+    initializeAuth();
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // CRUD Operations for Stores
   const createStore = async (storeData: Partial<Store>) => {
