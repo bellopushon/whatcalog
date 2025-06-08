@@ -115,7 +115,7 @@ const handleSubmit = async (e) => {
       console.error('Auth error:', error);
       setErrors({ general: 'Error de conexión. Por favor intenta de nuevo.' });
       setIsLoading(false);
-    }
+    } 
 
     // ✅ IMPORTANTE: No setear isLoading(false) aquí para mantener el estado de carga hasta la redirección
   };
