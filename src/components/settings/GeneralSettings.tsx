@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { Upload, X, Phone, Globe, DollarSign, Type, MessageSquare } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -6,10 +6,10 @@ import { CURRENCIES, FONT_OPTIONS, generateSlug } from '../../utils/constants';
 import { MessageTemplate, DEFAULT_MESSAGE_TEMPLATE } from '../../utils/whatsapp';
 
 export default function GeneralSettings() {
-  const { state, dispatch } = useStore();
+  const { state, updateStore } = useStore();
   const { success, error } = useToast();
   const store = state.currentStore;
-  const logoInputRef = useRef(null);
+  const logoInputRef = React.useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: store?.name || '',
@@ -19,37 +19,38 @@ export default function GeneralSettings() {
     whatsapp: store?.whatsapp || '',
     currency: store?.currency || 'USD',
     fonts: {
-      heading: store?.fonts?.heading || 'Inter',
-      body: store?.fonts?.body || 'Inter',
+      heading: store?.headingFont || 'Inter',
+      body: store?.bodyFont || 'Inter',
     },
     socialMedia: {
-      facebook: store?.socialMedia?.facebook || '',
-      instagram: store?.socialMedia?.instagram || '',
-      tiktok: store?.socialMedia?.tiktok || '',
-      twitter: store?.socialMedia?.twitter || '',
-      showInCatalog: store?.socialMedia?.showInCatalog ?? true,
+      facebook: store?.facebookUrl || '',
+      instagram: store?.instagramUrl || '',
+      tiktok: store?.tiktokUrl || '',
+      twitter: store?.twitterUrl || '',
+      showInCatalog: store?.showSocialInCatalog ?? true,
     },
     messageTemplate: {
-      greeting: store?.messageTemplate?.greeting || DEFAULT_MESSAGE_TEMPLATE.greeting,
-      introduction: store?.messageTemplate?.introduction || DEFAULT_MESSAGE_TEMPLATE.introduction,
-      closing: store?.messageTemplate?.closing || DEFAULT_MESSAGE_TEMPLATE.closing,
-      includePhone: store?.messageTemplate?.includePhone ?? DEFAULT_MESSAGE_TEMPLATE.includePhone,
-      includeComments: store?.messageTemplate?.includeComments ?? DEFAULT_MESSAGE_TEMPLATE.includeComments,
+      greeting: store?.messageGreeting || DEFAULT_MESSAGE_TEMPLATE.greeting,
+      introduction: store?.messageIntroduction || DEFAULT_MESSAGE_TEMPLATE.introduction,
+      closing: store?.messageClosing || DEFAULT_MESSAGE_TEMPLATE.closing,
+      includePhone: store?.includePhoneInMessage ?? DEFAULT_MESSAGE_TEMPLATE.includePhone,
+      includeComments: store?.includeCommentsInMessage ?? DEFAULT_MESSAGE_TEMPLATE.includeComments,
     },
   });
 
   const [slugModified, setSlugModified] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData(prev => ({
         ...prev,
         [parent]: {
-          ...prev[parent],
+          ...prev[parent as keyof typeof prev],
           [child]: type === 'checkbox' ? checked : value
         }
       }));
@@ -67,8 +68,8 @@ export default function GeneralSettings() {
     }
   };
 
-  const handleLogoUpload = (e) => {
-    const file = e.target.files[0];
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         error('Error de archivo', 'La imagen debe ser menor a 5MB');
@@ -77,7 +78,7 @@ export default function GeneralSettings() {
 
       const reader = new FileReader();
       reader.onload = (e) => {
-        setFormData(prev => ({ ...prev, logo: e.target.result }));
+        setFormData(prev => ({ ...prev, logo: e.target?.result as string }));
       };
       reader.readAsDataURL(file);
     }
@@ -109,7 +110,7 @@ export default function GeneralSettings() {
     return true;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
@@ -117,16 +118,35 @@ export default function GeneralSettings() {
     setIsSaving(true);
 
     try {
-      // Update the store with new data
-      dispatch({
-        type: 'UPDATE_STORE',
-        payload: formData
-      });
+      // Preparar datos para actualizar
+      const updateData = {
+        name: formData.name.trim(),
+        slug: formData.slug.trim(),
+        description: formData.description.trim(),
+        logo: formData.logo,
+        whatsapp: formData.whatsapp.trim(),
+        currency: formData.currency,
+        headingFont: formData.fonts.heading,
+        bodyFont: formData.fonts.body,
+        facebookUrl: formData.socialMedia.facebook.trim(),
+        instagramUrl: formData.socialMedia.instagram.trim(),
+        tiktokUrl: formData.socialMedia.tiktok.trim(),
+        twitterUrl: formData.socialMedia.twitter.trim(),
+        showSocialInCatalog: formData.socialMedia.showInCatalog,
+        messageGreeting: formData.messageTemplate.greeting,
+        messageIntroduction: formData.messageTemplate.introduction,
+        messageClosing: formData.messageTemplate.closing,
+        includePhoneInMessage: formData.messageTemplate.includePhone,
+        includeCommentsInMessage: formData.messageTemplate.includeComments,
+      };
+
+      // Actualizar tienda en Supabase
+      await updateStore(updateData);
 
       success('¡Configuración guardada!', 'Los cambios se han aplicado correctamente');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving settings:', err);
-      error('Error al guardar', 'No se pudieron guardar los cambios. Intenta de nuevo.');
+      error('Error al guardar', err.message || 'No se pudieron guardar los cambios. Intenta de nuevo.');
     } finally {
       setIsSaving(false);
     }

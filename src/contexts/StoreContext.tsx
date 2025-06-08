@@ -153,6 +153,7 @@ const StoreContext = createContext<{
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   createStore: (storeData: Omit<Store, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<Store>;
+  updateStore: (storeData: Partial<Store>) => Promise<void>;
   canCreateStore: () => boolean;
   getMaxStores: () => number;
 }>({
@@ -161,6 +162,7 @@ const StoreContext = createContext<{
   login: async () => {},
   register: async () => {},
   createStore: async () => ({} as Store),
+  updateStore: async () => {},
   canCreateStore: () => false,
   getMaxStores: () => 1,
 });
@@ -224,6 +226,45 @@ function transformSupabaseStoreToAppStore(storeData: any): Store {
     createdAt: storeData.created_at,
     updatedAt: storeData.updated_at,
   };
+}
+
+function transformAppStoreToSupabaseUpdate(storeData: Partial<Store>) {
+  const supabaseData: any = {};
+  
+  if (storeData.name !== undefined) supabaseData.name = storeData.name;
+  if (storeData.slug !== undefined) supabaseData.slug = storeData.slug;
+  if (storeData.description !== undefined) supabaseData.description = storeData.description;
+  if (storeData.logo !== undefined) supabaseData.logo = storeData.logo;
+  if (storeData.whatsapp !== undefined) supabaseData.whatsapp = storeData.whatsapp;
+  if (storeData.currency !== undefined) supabaseData.currency = storeData.currency;
+  if (storeData.headingFont !== undefined) supabaseData.heading_font = storeData.headingFont;
+  if (storeData.bodyFont !== undefined) supabaseData.body_font = storeData.bodyFont;
+  if (storeData.colorPalette !== undefined) supabaseData.color_palette = storeData.colorPalette;
+  if (storeData.themeMode !== undefined) supabaseData.theme_mode = storeData.themeMode;
+  if (storeData.borderRadius !== undefined) supabaseData.border_radius = storeData.borderRadius;
+  if (storeData.productsPerPage !== undefined) supabaseData.products_per_page = storeData.productsPerPage;
+  if (storeData.facebookUrl !== undefined) supabaseData.facebook_url = storeData.facebookUrl;
+  if (storeData.instagramUrl !== undefined) supabaseData.instagram_url = storeData.instagramUrl;
+  if (storeData.tiktokUrl !== undefined) supabaseData.tiktok_url = storeData.tiktokUrl;
+  if (storeData.twitterUrl !== undefined) supabaseData.twitter_url = storeData.twitterUrl;
+  if (storeData.showSocialInCatalog !== undefined) supabaseData.show_social_in_catalog = storeData.showSocialInCatalog;
+  if (storeData.acceptCash !== undefined) supabaseData.accept_cash = storeData.acceptCash;
+  if (storeData.acceptBankTransfer !== undefined) supabaseData.accept_bank_transfer = storeData.acceptBankTransfer;
+  if (storeData.bankDetails !== undefined) supabaseData.bank_details = storeData.bankDetails;
+  if (storeData.allowPickup !== undefined) supabaseData.allow_pickup = storeData.allowPickup;
+  if (storeData.allowDelivery !== undefined) supabaseData.allow_delivery = storeData.allowDelivery;
+  if (storeData.deliveryCost !== undefined) supabaseData.delivery_cost = storeData.deliveryCost;
+  if (storeData.deliveryZone !== undefined) supabaseData.delivery_zone = storeData.deliveryZone;
+  if (storeData.messageGreeting !== undefined) supabaseData.message_greeting = storeData.messageGreeting;
+  if (storeData.messageIntroduction !== undefined) supabaseData.message_introduction = storeData.messageIntroduction;
+  if (storeData.messageClosing !== undefined) supabaseData.message_closing = storeData.messageClosing;
+  if (storeData.includePhoneInMessage !== undefined) supabaseData.include_phone_in_message = storeData.includePhoneInMessage;
+  if (storeData.includeCommentsInMessage !== undefined) supabaseData.include_comments_in_message = storeData.includeCommentsInMessage;
+  
+  // Always update the updated_at timestamp
+  supabaseData.updated_at = new Date().toISOString();
+  
+  return supabaseData;
 }
 
 // Proveedor de contexto
@@ -318,6 +359,52 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'ADD_STORE', payload: newStore });
     
     return newStore;
+  };
+
+  // Función para actualizar tienda
+  const updateStore = async (storeData: Partial<Store>): Promise<void> => {
+    if (!state.currentStore) {
+      throw new Error('No hay tienda seleccionada para actualizar');
+    }
+
+    if (!state.user) {
+      throw new Error('Usuario no autenticado');
+    }
+
+    // Verificar que el slug no exista en otra tienda (si se está actualizando el slug)
+    if (storeData.slug && storeData.slug !== state.currentStore.slug) {
+      const { data: existingStore } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('slug', storeData.slug)
+        .neq('id', state.currentStore.id)
+        .limit(1);
+
+      if (existingStore && existingStore.length > 0) {
+        throw new Error('Esta URL ya está en uso. Por favor elige otra.');
+      }
+    }
+
+    // Transformar datos para Supabase
+    const supabaseUpdateData = transformAppStoreToSupabaseUpdate(storeData);
+
+    // Actualizar en Supabase
+    const { data, error } = await supabase
+      .from('stores')
+      .update(supabaseUpdateData)
+      .eq('id', state.currentStore.id)
+      .eq('user_id', state.user.id) // Seguridad adicional
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating store:', error);
+      throw new Error('No se pudo actualizar la tienda. Intenta de nuevo.');
+    }
+
+    // Actualizar estado local
+    const updatedStore = transformSupabaseStoreToAppStore(data);
+    dispatch({ type: 'UPDATE_STORE', payload: updatedStore });
   };
 
   // Función de login (sin cambios)
@@ -446,6 +533,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       login, 
       register, 
       createStore,
+      updateStore,
       canCreateStore,
       getMaxStores
     }}>
