@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Crown, Calendar, CreditCard, Download, AlertTriangle, Check, X } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -14,10 +14,57 @@ export default function ActiveSubscription() {
   const [showDowngradeWarning, setShowDowngradeWarning] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [isCanceling, setIsCanceling] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const user = state.user;
   const subscriptionEndDate = user?.subscriptionEndDate ? new Date(user.subscriptionEndDate) : null;
   const daysRemaining = subscriptionEndDate ? Math.ceil((subscriptionEndDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : 0;
+
+  useEffect(() => {
+    // Verificar el estado de la suscripción al cargar
+    const checkSubscriptionStatus = async () => {
+      try {
+        // Get current user
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        
+        if (!currentUser) {
+          throw new Error('No user found');
+        }
+        
+        // Get user data from database
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', currentUser.id)
+          .single();
+
+        if (userError) {
+          throw userError;
+        }
+        
+        // Update local state if needed
+        if (userData) {
+          const appUser = {
+            ...state.user!,
+            plan: userData.plan,
+            subscriptionStatus: userData.subscription_status,
+            subscriptionStartDate: userData.subscription_start_date,
+            subscriptionEndDate: userData.subscription_end_date,
+            subscriptionCanceledAt: userData.subscription_canceled_at,
+            paymentMethod: userData.payment_method,
+          };
+          
+          dispatch({ type: 'SET_USER', payload: appUser });
+        }
+      } catch (err) {
+        console.error('Error checking subscription status:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkSubscriptionStatus();
+  }, []);
 
   const handleCancelSubscription = async () => {
     // Check if user will exceed store limits after cancellation
@@ -184,6 +231,17 @@ export default function ActiveSubscription() {
       error('Error al actualizar', err.message || 'No se pudo actualizar el plan. Intenta de nuevo.');
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 admin-dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 admin-dark:text-gray-300">Cargando información de suscripción...</p>
+        </div>
+      </div>
+    );
+  }
 
   const isCanceled = user?.subscriptionStatus === 'canceled';
   const planName = user?.plan === 'emprendedor' ? 'Emprendedor' : user?.plan === 'profesional' ? 'Profesional' : 'Premium';

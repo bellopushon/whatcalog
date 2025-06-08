@@ -62,9 +62,6 @@ export default function UserDropdown({ onEditProfile }: UserDropdownProps) {
   const user = state.user;
   const currentStore = state.currentStore;
 
-  // Check if user has active subscription
-  const hasActiveSubscription = user?.plan === 'emprendedor' || user?.plan === 'profesional';
-
   return (
     <div className="relative" ref={dropdownRef}>
       {/* User Button */}
@@ -195,7 +192,7 @@ export default function UserDropdown({ onEditProfile }: UserDropdownProps) {
                   Mi Perfil
                 </Link>
 
-                {/* Suscripciones - Nueva opción */}
+                {/* Suscripciones - Siempre visible */}
                 <Link
                   to="/subscription"
                   onClick={() => setIsOpen(false)}

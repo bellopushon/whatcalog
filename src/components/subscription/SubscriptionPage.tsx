@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Crown, Check, CreditCard, Star, Shield, Zap, X, Store, Package, Palette, BarChart3, Instagram, Eye } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -8,7 +8,7 @@ import ActiveSubscription from './ActiveSubscription';
 
 const plans = [
   {
-    id: 'gratis',
+    id: 'gratuito',
     name: 'Gratis',
     price: 0,
     period: 'mes',
@@ -117,14 +117,169 @@ export default function SubscriptionPage() {
   const [selectedPlan, setSelectedPlan] = useState('emprendedor');
   const [showPayment, setShowPayment] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const currentPlan = state.user?.plan || 'gratuito';
   const isCurrentlyPremium = currentPlan === 'emprendedor' || currentPlan === 'profesional';
 
+  // Actualizar los planes para marcar el plan actual
+  useEffect(() => {
+    plans.forEach(plan => {
+      plan.current = plan.id === currentPlan;
+    });
+    setIsLoading(false);
+  }, [currentPlan]);
+
   const handlePlanSelect = (planId: string) => {
     setSelectedPlan(planId);
+    
+    // Si el plan seleccionado es premium y el usuario no tiene un plan premium actualmente
     if ((planId === 'emprendedor' || planId === 'profesional') && currentPlan === 'gratuito') {
       setShowPayment(true);
+    }
+    
+    // Si el usuario ya tiene un plan premium y quiere cambiar a otro plan premium
+    else if ((planId === 'emprendedor' || planId === 'profesional') && 
+             (currentPlan === 'emprendedor' || currentPlan === 'profesional') && 
+             planId !== currentPlan) {
+      // Mostrar confirmación para cambiar entre planes premium
+      if (window.confirm(`¿Estás seguro de que quieres cambiar al plan ${planId === 'emprendedor' ? 'Emprendedor' : 'Profesional'}?`)) {
+        handlePlanChange(planId);
+      }
+    }
+    
+    // Si el usuario quiere volver al plan gratuito desde un plan premium
+    else if (planId === 'gratuito' && (currentPlan === 'emprendedor' || currentPlan === 'profesional')) {
+      if (window.confirm('¿Estás seguro de que quieres volver al plan gratuito? Perderás todas las funciones premium.')) {
+        handleDowngrade();
+      }
+    }
+  };
+
+  const handlePlanChange = async (newPlan: string) => {
+    setIsProcessing(true);
+    
+    try {
+      // Get current user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        throw new Error('No se encontró el usuario');
+      }
+      
+      // Calculate subscription end date (30 days from now)
+      const subscriptionEndDate = new Date();
+      subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 30);
+      
+      // Update user in database with new plan information
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          plan: newPlan as 'emprendedor' | 'profesional',
+          subscription_status: 'active',
+          subscription_start_date: new Date().toISOString(),
+          subscription_end_date: subscriptionEndDate.toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentUser.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+      
+      // Update local state
+      const updatedUser = {
+        ...state.user!,
+        plan: newPlan as 'emprendedor' | 'profesional',
+        subscriptionStatus: 'active',
+        subscriptionStartDate: new Date().toISOString(),
+        subscriptionEndDate: subscriptionEndDate.toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      dispatch({ type: 'SET_USER', payload: updatedUser });
+      
+      const planName = newPlan === 'emprendedor' ? 'Emprendedor' : 'Profesional';
+      success(
+        `¡Plan actualizado a ${planName}!`,
+        'Tu suscripción se ha actualizado correctamente'
+      );
+      
+      // Redirect to dashboard after a moment
+      setTimeout(() => {
+        window.location.href = '/admin';
+      }, 2000);
+      
+    } catch (err: any) {
+      console.error('Plan change error:', err);
+      error('Error al cambiar plan', err.message || 'No se pudo cambiar el plan. Intenta de nuevo.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDowngrade = async () => {
+    setIsProcessing(true);
+    
+    try {
+      // Verificar si el usuario tiene más de una tienda
+      if (state.stores.length > 1) {
+        error(
+          'No se puede cambiar al plan gratuito',
+          'Debes eliminar tiendas adicionales antes de cambiar al plan gratuito. El plan gratuito solo permite una tienda.'
+        );
+        setIsProcessing(false);
+        return;
+      }
+      
+      // Get current user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        throw new Error('No se encontró el usuario');
+      }
+      
+      // Update user in database
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          plan: 'gratuito',
+          subscription_status: 'canceled',
+          subscription_canceled_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentUser.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+      
+      // Update local state
+      const updatedUser = {
+        ...state.user!,
+        plan: 'gratuito',
+        subscriptionStatus: 'canceled',
+        subscriptionCanceledAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      dispatch({ type: 'SET_USER', payload: updatedUser });
+      
+      success(
+        'Plan cambiado a gratuito',
+        'Tu suscripción ha sido cancelada y has vuelto al plan gratuito'
+      );
+      
+      // Redirect to dashboard after a moment
+      setTimeout(() => {
+        window.location.href = '/admin';
+      }, 2000);
+      
+    } catch (err: any) {
+      console.error('Downgrade error:', err);
+      error('Error al cambiar plan', err.message || 'No se pudo cambiar al plan gratuito. Intenta de nuevo.');
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -132,14 +287,11 @@ export default function SubscriptionPage() {
     setIsProcessing(true);
     
     try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
       // Get current user
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       
       if (!currentUser) {
-        throw new Error('No user found');
+        throw new Error('No se encontró el usuario');
       }
       
       // Calculate subscription end date (30 days from now)
@@ -198,6 +350,17 @@ export default function SubscriptionPage() {
       setIsProcessing(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 admin-dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600 admin-dark:text-gray-300">Cargando información de suscripción...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (showPayment) {
     return (
@@ -285,7 +448,7 @@ export default function SubscriptionPage() {
                     )}
                   </div>
 
-                  {plan.id === 'gratis' && currentPlan === 'gratuito' && (
+                  {plan.id === 'gratuito' && currentPlan === 'gratuito' && (
                     <span className="inline-block bg-green-100 admin-dark:bg-green-900 text-green-800 admin-dark:text-green-200 px-3 py-1 rounded-full text-sm font-medium">
                       Plan Actual
                     </span>
@@ -327,21 +490,29 @@ export default function SubscriptionPage() {
                 {/* Action Button */}
                 <button
                   onClick={() => handlePlanSelect(plan.id)}
-                  disabled={plan.id === 'gratis' && currentPlan === 'gratuito'}
+                  disabled={(plan.id === 'gratuito' && currentPlan === 'gratuito') || isProcessing}
                   className={`w-full py-3 px-6 rounded-lg font-medium transition-all ${
-                    plan.popular
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white transform hover:scale-105'
-                      : plan.id === 'gratis' && currentPlan === 'gratuito'
-                      ? 'bg-gray-100 admin-dark:bg-gray-700 text-gray-500 admin-dark:text-gray-400 cursor-not-allowed'
-                      : 'bg-gray-100 admin-dark:bg-gray-700 hover:bg-gray-200 admin-dark:hover:bg-gray-600 text-gray-700 admin-dark:text-gray-300'
+                    isProcessing 
+                      ? 'bg-gray-300 admin-dark:bg-gray-600 text-gray-500 admin-dark:text-gray-400 cursor-not-allowed'
+                      : plan.popular
+                        ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white transform hover:scale-105'
+                        : plan.id === 'gratuito' && currentPlan === 'gratuito'
+                          ? 'bg-gray-100 admin-dark:bg-gray-700 text-gray-500 admin-dark:text-gray-400 cursor-not-allowed'
+                          : 'bg-gray-100 admin-dark:bg-gray-700 hover:bg-gray-200 admin-dark:hover:bg-gray-600 text-gray-700 admin-dark:text-gray-300'
                   }`}
                 >
-                  {plan.id === 'gratis' && currentPlan === 'gratuito'
-                    ? 'Plan Actual'
-                    : plan.price > 0
-                    ? `Actualizar a ${plan.name}`
-                    : 'Plan Gratuito'
-                  }
+                  {isProcessing ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                      <span>Procesando...</span>
+                    </div>
+                  ) : (
+                    plan.id === 'gratuito' && currentPlan === 'gratuito'
+                      ? 'Plan Actual'
+                      : plan.price > 0
+                        ? `Actualizar a ${plan.name}`
+                        : 'Plan Gratuito'
+                  )}
                 </button>
               </div>
             </div>
