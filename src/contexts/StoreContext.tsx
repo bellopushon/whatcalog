@@ -413,7 +413,7 @@ useEffect(() => {
             
           if (storesData && storesData.length > 0) {
             const transformedStores = storesData.map(store => 
-              transformSupabaseStoreToAppStore(
+              transformSupabaseStoreToAppStore( 
                 store,
                 store.products || [],
                 store.categories || []
