@@ -79,7 +79,7 @@ function AppRoutes() {
   return (
     <Routes> 
       {/* Public Routes */}
-      <Route path="/login" element={state.isAuthenticated ? <Navigate to="/admin" replace /> : <LoginPage />} />
+      <Route path="/login" element={state.isAuthenticated ? <Navigate to="/admin\" replace /> : <LoginPage />} />
       <Route path="/store/:slug" element={<PublicCatalog />} />
       
       {/* Protected Admin Routes */}
