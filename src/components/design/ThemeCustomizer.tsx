@@ -196,21 +196,13 @@ export default function ThemeCustomizer() {
         </div>
       </div>
 
-      {/* Border Radius Configuration - OPTIMIZADO */}
+      {/* Border Radius Configuration - Más minimalista y responsivo */}
       <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
         <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Radio del Borde</h2>
         
-        <div className="space-y-6">
-          {/* Explanation - MÁS COMPACTA */}
-          <div className="bg-blue-50 admin-dark:bg-blue-900/20 border border-blue-200 admin-dark:border-blue-700 rounded-lg p-3">
-            <h3 className="font-medium text-blue-900 admin-dark:text-blue-200 mb-1 text-sm">¿Qué es el Radio del Borde?</h3>
-            <p className="text-xs text-blue-800 admin-dark:text-blue-300">
-              Controla qué tan redondeadas serán las esquinas de las tarjetas de productos, botones y elementos en tu catálogo.
-            </p>
-          </div>
-
-          {/* Slider Control - MÁS COMPACTO */}
-          <div className="space-y-3">
+        <div className="space-y-4">
+          {/* Slider Control - Más compacto */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600 admin-dark:text-gray-300">Redondeado</span>
               <span className="text-sm font-medium text-gray-900 admin-dark:text-white">{selectedRadius}px</span>
@@ -226,31 +218,29 @@ export default function ThemeCustomizer() {
             />
             
             <div className="flex justify-between text-xs text-gray-500 admin-dark:text-gray-400">
-              <span>0px</span>
-              <span>10px</span>
-              <span>20px</span>
+              <span>0px (Cuadrado)</span>
+              <span>10px (Moderado)</span>
+              <span>20px (Muy redondeado)</span>
             </div>
           </div>
 
-          {/* Live Preview - OPTIMIZADO Y MÁS REALISTA */}
-          <div className="space-y-4">
-            <h3 className="font-medium text-gray-900 admin-dark:text-white text-sm">Vista Previa en Tiempo Real</h3>
+          {/* Live Preview - Más compacto y similar al catálogo real */}
+          <div className="mt-4">
+            <h3 className="font-medium text-gray-900 admin-dark:text-white text-sm mb-3">Vista Previa</h3>
             
-            {/* Product Card Preview - TAMAÑO REAL DEL CATÁLOGO */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {/* Product Card Example - TAMAÑO PEQUEÑO COMO EN EL CATÁLOGO */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Tarjeta de Producto - Tamaño real del catálogo */}
               <div>
-                <h4 className="text-xs font-medium text-gray-700 admin-dark:text-gray-300 mb-2">Tarjeta de Producto</h4>
                 <div 
-                  className="bg-white admin-dark:bg-gray-700 border border-gray-200 admin-dark:border-gray-600 overflow-hidden shadow-sm w-full"
+                  className="bg-white admin-dark:bg-gray-700 border border-gray-200 admin-dark:border-gray-600 overflow-hidden shadow-sm"
                   style={{ borderRadius: `${selectedRadius}px` }}
                 >
                   <div className="aspect-square bg-gray-100 admin-dark:bg-gray-600 flex items-center justify-center">
                     <span className="text-gray-400 text-xs">Imagen</span>
                   </div>
                   <div className="p-2">
-                    <h5 className="font-medium text-gray-900 admin-dark:text-white text-xs truncate">Producto Ejemplo</h5>
-                    <p className="text-gray-600 admin-dark:text-gray-300 text-xs">$29.99</p>
+                    <h5 className="font-medium text-gray-900 admin-dark:text-white text-xs truncate">Producto</h5>
+                    <p className="text-xs text-gray-600 admin-dark:text-gray-300">$29.99</p>
                     <button 
                       className="mt-1 text-white text-xs px-2 py-1 font-medium w-full"
                       style={{ 
@@ -264,50 +254,33 @@ export default function ThemeCustomizer() {
                 </div>
               </div>
 
-              {/* Button Examples - MÁS COMPACTOS */}
+              {/* Botón Primario */}
               <div>
-                <h4 className="text-xs font-medium text-gray-700 admin-dark:text-gray-300 mb-2">Botones</h4>
-                <div className="space-y-2">
-                  {/* Primary Button */}
-                  <button 
-                    className="w-full text-white py-2 px-3 text-xs font-medium"
-                    style={{ 
-                      backgroundColor: currentPaletteData.primary,
-                      borderRadius: `${selectedRadius}px`
-                    }}
-                  >
-                    Primario
-                  </button>
-                  
-                  {/* Secondary Button */}
-                  <button 
-                    className="w-full border py-2 px-3 text-xs font-medium"
-                    style={{ 
-                      borderColor: currentPaletteData.primary,
-                      color: currentPaletteData.primary,
-                      borderRadius: `${selectedRadius}px`
-                    }}
-                  >
-                    Secundario
-                  </button>
-                </div>
+                <button 
+                  className="w-full text-white py-2 px-3 text-xs font-medium"
+                  style={{ 
+                    backgroundColor: currentPaletteData.primary,
+                    borderRadius: `${selectedRadius}px`
+                  }}
+                >
+                  Botón Primario
+                </button>
               </div>
 
-              {/* Input Field */}
+              {/* Campo de Texto */}
               <div>
-                <h4 className="text-xs font-medium text-gray-700 admin-dark:text-gray-300 mb-2">Campo de Texto</h4>
                 <input 
                   type="text" 
-                  placeholder="Texto..."
+                  placeholder="Campo de texto"
                   className="w-full border border-gray-300 admin-dark:border-gray-600 px-2 py-2 text-xs admin-dark:bg-gray-700 admin-dark:text-white"
                   style={{ borderRadius: `${selectedRadius}px` }}
                 />
               </div>
 
-              {/* Style Description - MÁS COMPACTO */}
+              {/* Estilo */}
               <div>
-                <h4 className="text-xs font-medium text-gray-700 admin-dark:text-gray-300 mb-2">Estilo</h4>
-                <div className="bg-gray-50 admin-dark:bg-gray-700 p-2 rounded text-xs text-gray-600 admin-dark:text-gray-300">
+                <div className="bg-gray-50 admin-dark:bg-gray-700 p-2 rounded text-xs text-gray-600 admin-dark:text-gray-300 text-center"
+                     style={{ borderRadius: `${selectedRadius}px` }}>
                   {selectedRadius === 0 && "Cuadrado"}
                   {selectedRadius > 0 && selectedRadius <= 5 && "Profesional"}
                   {selectedRadius > 5 && selectedRadius <= 12 && "Moderno"}
@@ -315,22 +288,11 @@ export default function ThemeCustomizer() {
                 </div>
               </div>
             </div>
-
-            {/* Style Description - SIMPLIFICADO */}
-            <div className="bg-gray-50 admin-dark:bg-gray-700 p-3 rounded-lg">
-              <p className="text-sm text-gray-600 admin-dark:text-gray-300">
-                <strong>Estilo actual:</strong> {' '}
-                {selectedRadius === 0 && "Esquinas cuadradas - Estilo minimalista"}
-                {selectedRadius > 0 && selectedRadius <= 5 && "Ligeramente redondeado - Estilo profesional"}
-                {selectedRadius > 5 && selectedRadius <= 12 && "Moderadamente redondeado - Estilo moderno"}
-                {selectedRadius > 12 && "Muy redondeado - Estilo suave"}
-              </p>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Products Per Page - MÁS COMPACTO */}
+      {/* Products Per Page */}
       <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
         <div className="flex items-center gap-3 mb-4">
           <Smartphone className="w-6 h-6 text-green-600" />
@@ -355,7 +317,7 @@ export default function ThemeCustomizer() {
         </div>
       </div>
 
-      {/* Preview Link - MÁS COMPACTO */}
+      {/* Preview Link */}
       {store && (
         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 admin-dark:from-gray-800 admin-dark:to-gray-900 rounded-xl border border-indigo-200 admin-dark:border-indigo-800 p-4">
           <div className="text-center">
