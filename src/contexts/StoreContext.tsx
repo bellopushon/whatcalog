@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { supabase, type Tables, type TablesInsert, type TablesUpdate } from '../lib/supabase';
 import { MessageTemplate } from '../utils/whatsapp';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { useAuth } from './AuthContext';
 
 export interface Product {
   id: string;
