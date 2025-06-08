@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             session,
             isLoading: false,
             isAuthenticated: !!authUser,
-            error: null,
+            error: null, 
           });
 
           // Force redirect after successful auth
