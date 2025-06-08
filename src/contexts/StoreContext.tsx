@@ -265,9 +265,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .from('stores')
       .select('id')
       .eq('slug', storeData.slug)
-      .single();
+      .limit(1);
 
-    if (existingStore) {
+    if (existingStore && existingStore.length > 0) {
       throw new Error('Esta URL ya está en uso. Por favor elige otra.');
     }
 
