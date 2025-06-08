@@ -100,6 +100,7 @@ interface AppState {
   currentStore: Store | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isInitialized: boolean;
 }
 
 type Action =
@@ -115,6 +116,7 @@ type Action =
   | { type: 'UPDATE_CATEGORY'; payload: Category }
   | { type: 'DELETE_CATEGORY'; payload: string }
   | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_INITIALIZED'; payload: boolean }
   | { type: 'LOGOUT' };
 
 const initialState: AppState = {
@@ -122,19 +124,22 @@ const initialState: AppState = {
   stores: [],
   currentStore: null,
   isAuthenticated: false,
-  isLoading: false,
+  isLoading: true,
+  isInitialized: false,
 };
 
 function storeReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'SET_USER':
-      return { ...state, user: action.payload, isAuthenticated: true };
+      return { ...state, user: action.payload, isAuthenticated: true, isLoading: false };
     case 'SET_STORES':
       return { ...state, stores: action.payload };
     case 'SET_CURRENT_STORE':
       return { ...state, currentStore: action.payload };
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
+    case 'SET_INITIALIZED':
+      return { ...state, isInitialized: action.payload };
     case 'DELETE_STORE':
       const updatedStores = state.stores.filter(store => store.id !== action.payload);
       const newCurrentStore = state.currentStore?.id === action.payload 
@@ -253,7 +258,7 @@ function storeReducer(state: AppState, action: Action): AppState {
         )
       };
     case 'LOGOUT':
-      return { ...initialState };
+      return { ...initialState, isInitialized: true, isLoading: false };
     default:
       return state;
   }
@@ -362,6 +367,24 @@ function transformSupabaseStoreToAppStore(
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(storeReducer, initialState);
 
+  // Clear any existing localStorage data on mount
+  useEffect(() => {
+    // Clear all localStorage data that might conflict with Supabase
+    const keysToRemove = [
+      'tutaviendo_user',
+      'tutaviendo_stores', 
+      'tutaviendo_currentStore',
+      'tutaviendo_auth',
+      'supabase.auth.token'
+    ];
+    
+    keysToRemove.forEach(key => {
+      localStorage.removeItem(key);
+    });
+    
+    console.log('Cleared localStorage data');
+  }, []);
+
   // Load user data
   const loadUserData = async (userId: string) => {
     try {
@@ -422,11 +445,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const initAuth = async () => {
       try {
         console.log('Checking for existing session...');
+        dispatch({ type: 'SET_LOADING', payload: true });
         
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('Session error:', error);
+          dispatch({ type: 'SET_LOADING', payload: false });
+          dispatch({ type: 'SET_INITIALIZED', payload: true });
           return;
         }
 
@@ -451,9 +477,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           await loadUserData(session.user.id);
         } else {
           console.log('No existing session found');
+          dispatch({ type: 'SET_LOADING', payload: false });
         }
+        
+        dispatch({ type: 'SET_INITIALIZED', payload: true });
       } catch (error) {
         console.error('Auth initialization error:', error);
+        dispatch({ type: 'SET_LOADING', payload: false });
+        dispatch({ type: 'SET_INITIALIZED', payload: true });
       }
     };
 
@@ -466,6 +497,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
         if (event === 'SIGNED_IN' && session?.user) {
           console.log('User signed in:', session.user.email);
+          dispatch({ type: 'SET_LOADING', payload: true });
           
           // Create or update user profile in database
           const { error: upsertError } = await supabase
@@ -530,9 +562,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       
     } catch (error) {
       console.error('Login failed:', error);
-      throw error;
-    } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
+      throw error;
     }
   };
 
@@ -563,9 +594,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       
     } catch (error) {
       console.error('Registration failed:', error);
-      throw error;
-    } finally {
       dispatch({ type: 'SET_LOADING', payload: false });
+      throw error;
     }
   };
 
@@ -575,6 +605,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+      
+      // Clear any remaining localStorage
+      localStorage.clear();
       
       dispatch({ type: 'LOGOUT' });
       console.log('Logout successful');

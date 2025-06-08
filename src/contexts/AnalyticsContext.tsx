@@ -61,7 +61,6 @@ const AnalyticsContext = createContext<{
   getOrderValue: (storeId: string, dateRange?: { start: Date; end: Date }) => number;
 } | null>(null);
 
-const STORAGE_KEY = 'tutaviendo_analytics';
 const SESSION_STORAGE_KEY = 'tutaviendo_session';
 const VISIT_TRACKING_KEY = 'tutaviendo_visits_tracked';
 
@@ -88,13 +87,13 @@ function getVisitTrackingKey(storeId: string): string {
 
 function hasVisitBeenTracked(storeId: string): boolean {
   const trackingKey = getVisitTrackingKey(storeId);
-  const trackedVisits = JSON.parse(localStorage.getItem(VISIT_TRACKING_KEY) || '{}');
+  const trackedVisits = JSON.parse(sessionStorage.getItem(VISIT_TRACKING_KEY) || '{}');
   return trackedVisits[trackingKey] === true;
 }
 
 function markVisitAsTracked(storeId: string): void {
   const trackingKey = getVisitTrackingKey(storeId);
-  const trackedVisits = JSON.parse(localStorage.getItem(VISIT_TRACKING_KEY) || '{}');
+  const trackedVisits = JSON.parse(sessionStorage.getItem(VISIT_TRACKING_KEY) || '{}');
   trackedVisits[trackingKey] = true;
   
   // Clean up old tracking data (keep only last 7 days)
@@ -108,64 +107,16 @@ function markVisitAsTracked(storeId: string): void {
     }
   });
   
-  localStorage.setItem(VISIT_TRACKING_KEY, JSON.stringify(trackedVisits));
+  sessionStorage.setItem(VISIT_TRACKING_KEY, JSON.stringify(trackedVisits));
 }
 
 export function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(analyticsReducer, initialState);
 
-  // Load analytics data from localStorage
+  // Initialize analytics (no localStorage dependency)
   useEffect(() => {
-    try {
-      const savedData = localStorage.getItem(STORAGE_KEY);
-      if (savedData) {
-        const parsedData = JSON.parse(savedData);
-        if (Array.isArray(parsedData)) {
-          // Clean up old events on load
-          const ninetyDaysAgo = new Date();
-          ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-          const filteredEvents = parsedData.filter(event => 
-            new Date(event.timestamp) > ninetyDaysAgo
-          );
-          dispatch({ type: 'SET_EVENTS', payload: filteredEvents });
-        }
-      }
-    } catch (error) {
-      console.error('Error loading analytics data:', error);
-      // Clear corrupted data
-      localStorage.removeItem(STORAGE_KEY);
-    } finally {
-      dispatch({ type: 'SET_LOADED', payload: true });
-    }
+    dispatch({ type: 'SET_LOADED', payload: true });
   }, []);
-
-  // Save analytics data to localStorage with error handling
-  useEffect(() => {
-    if (state.isLoaded && state.events.length > 0) {
-      try {
-        // Limit the number of events to prevent storage overflow
-        const maxEvents = 1000;
-        const eventsToSave = state.events.slice(-maxEvents);
-        
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(eventsToSave));
-      } catch (error) {
-        console.error('Error saving analytics data:', error);
-        
-        // If storage is full, clean up old events and try again
-        if (error.name === 'QuotaExceededError') {
-          dispatch({ type: 'CLEANUP_OLD_EVENTS' });
-          try {
-            const cleanedEvents = state.events.slice(-500); // Keep only last 500 events
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanedEvents));
-          } catch (retryError) {
-            console.error('Failed to save even after cleanup:', retryError);
-            // Clear all analytics data as last resort
-            localStorage.removeItem(STORAGE_KEY);
-          }
-        }
-      }
-    }
-  }, [state.events, state.isLoaded]);
 
   // Cleanup old events periodically
   useEffect(() => {

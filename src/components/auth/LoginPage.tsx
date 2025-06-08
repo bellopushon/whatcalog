@@ -13,18 +13,21 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { state, login, register } = useStore();
 
-  // ✅ CRÍTICO: Redirigir cuando el usuario se autentique
+  // ✅ CRITICAL: Redirect when user is authenticated
   useEffect(() => {
     console.log('LoginPage - Auth state changed:', { 
       isAuthenticated: state.isAuthenticated, 
-      user: state.user?.email 
+      user: state.user?.email,
+      isInitialized: state.isInitialized,
+      isLoading: state.isLoading
     });
     
-    if (state.isAuthenticated && state.user) {
+    // Only redirect if fully initialized and authenticated
+    if (state.isInitialized && state.isAuthenticated && state.user && !state.isLoading) {
       console.log('User is authenticated, redirecting to admin...');
       navigate('/admin', { replace: true });
     }
-  }, [state.isAuthenticated, state.user, navigate]);
+  }, [state.isAuthenticated, state.user, state.isInitialized, state.isLoading, navigate]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -83,6 +86,18 @@ export default function LoginPage() {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
+
+  // Show loading state while authenticating
+  if (state.isLoading && !state.isInitialized) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 flex items-center justify-center p-4">

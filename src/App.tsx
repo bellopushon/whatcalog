@@ -29,17 +29,35 @@ import SubscriptionPage from './components/subscription/SubscriptionPage';
 // Public Components
 import PublicCatalog from './components/catalog/PublicCatalog';
 
-// ✅ CRÍTICO: ProtectedRoute que verifica correctamente el estado
+// Loading component
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-gray-600">Cargando...</p>
+      </div>
+    </div>
+  );
+}
+
+// ✅ CRITICAL: ProtectedRoute that correctly verifies state
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { state } = useStore();
   
   console.log('ProtectedRoute - Current state:', {
     isAuthenticated: state.isAuthenticated,
     user: state.user?.email,
-    isLoading: state.isLoading
+    isLoading: state.isLoading,
+    isInitialized: state.isInitialized
   });
   
-  // Si no está autenticado, redirigir al login
+  // Show loading while initializing
+  if (!state.isInitialized || state.isLoading) {
+    return <LoadingScreen />;
+  }
+  
+  // If not authenticated, redirect to login
   if (!state.isAuthenticated) {
     console.log('User not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
@@ -53,6 +71,14 @@ function AppRoutes() {
   const { state } = useStore();
   const { isDarkMode } = useTheme();
   const location = useLocation();
+  
+  console.log('AppRoutes - Current state:', {
+    isAuthenticated: state.isAuthenticated,
+    user: state.user?.email,
+    pathname: location.pathname,
+    isLoading: state.isLoading,
+    isInitialized: state.isInitialized
+  });
   
   // Handle dark mode for admin routes only
   useEffect(() => {
@@ -85,11 +111,10 @@ function AppRoutes() {
     }
   }, [location.pathname, isDarkMode]);
   
-  console.log('AppRoutes - Current state:', {
-    isAuthenticated: state.isAuthenticated,
-    user: state.user?.email,
-    pathname: location.pathname
-  });
+  // Show loading screen while initializing
+  if (!state.isInitialized) {
+    return <LoadingScreen />;
+  }
   
   return (
     <Routes> 
@@ -98,7 +123,7 @@ function AppRoutes() {
         path="/login" 
         element={
           state.isAuthenticated ? (
-            <Navigate to="/admin\" replace />
+            <Navigate to="/admin" replace />
           ) : (
             <LoginPage />
           )
@@ -142,10 +167,11 @@ function AppRoutes() {
       <Route 
         path="/" 
         element={
-          <Navigate 
-            to={state.isAuthenticated ? "/admin" : "/login"} 
-            replace 
-          />
+          state.isAuthenticated ? (
+            <Navigate to="/admin" replace />
+          ) : (
+            <Navigate to="/login" replace />
+          )
         } 
       />
     </Routes>
