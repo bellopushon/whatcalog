@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { ArrowLeft, Upload, X, Star, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Upload, X, Star, AlertCircle, Plus } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -152,28 +152,28 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
 
   if (categories.length === 0) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
+      <div className="min-h-screen bg-gray-50 admin-dark:bg-gray-900 p-4">
+        <div className="flex items-center gap-3 mb-4">
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 admin-dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-6 h-6 text-gray-900 admin-dark:text-white" />
+            <ArrowLeft className="w-5 h-5 text-gray-900 admin-dark:text-white" />
           </button>
-          <h1 className="text-2xl font-bold text-gray-900 admin-dark:text-white">Nuevo Producto</h1>
+          <h1 className="text-xl font-bold text-gray-900 admin-dark:text-white">Nuevo Producto</h1>
         </div>
 
-        <div className="bg-yellow-50 admin-dark:bg-yellow-900/20 border border-yellow-200 admin-dark:border-yellow-700 rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <AlertCircle className="w-6 h-6 text-yellow-600 admin-dark:text-yellow-400" />
-            <h2 className="text-lg font-semibold text-yellow-800 admin-dark:text-yellow-200">Necesitas crear categorías primero</h2>
+        <div className="bg-yellow-50 admin-dark:bg-yellow-900/20 border border-yellow-200 admin-dark:border-yellow-700 rounded-lg p-4">
+          <div className="flex items-center gap-3 mb-3">
+            <AlertCircle className="w-5 h-5 text-yellow-600 admin-dark:text-yellow-400" />
+            <h2 className="font-semibold text-yellow-800 admin-dark:text-yellow-200">Necesitas crear categorías primero</h2>
           </div>
-          <p className="text-yellow-700 admin-dark:text-yellow-300 mb-4">
+          <p className="text-yellow-700 admin-dark:text-yellow-300 mb-4 text-sm">
             Para añadir productos, primero debes crear al menos una categoría.
           </p>
           <button
             onClick={() => window.location.href = '/admin/categories'}
-            className="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+            className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
             Ir a Categorías
           </button>
@@ -183,276 +183,282 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-gray-100 admin-dark:hover:bg-gray-700 rounded-lg transition-colors"
-        >
-          <ArrowLeft className="w-6 h-6 text-gray-900 admin-dark:text-white" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 admin-dark:text-white">
-            {product ? 'Editar Producto' : 'Nuevo Producto'}
-          </h1>
-          <p className="text-gray-600 admin-dark:text-gray-300 mt-1">
-            {product ? 'Modifica la información del producto' : 'Añade un nuevo producto a tu catálogo'}
-          </p>
+    <div className="min-h-screen bg-gray-50 admin-dark:bg-gray-900">
+      {/* Header - Fixed at top */}
+      <div className="sticky top-0 z-10 bg-gray-50 admin-dark:bg-gray-900 border-b border-gray-200 admin-dark:border-gray-700 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 admin-dark:hover:bg-gray-700 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-900 admin-dark:text-white" />
+          </button>
+          <div>
+            <h1 className="text-lg font-bold text-gray-900 admin-dark:text-white">
+              {product ? 'Editar Producto' : 'Nuevo Producto'}
+            </h1>
+            <p className="text-xs text-gray-500 admin-dark:text-gray-400">
+              {product ? 'Modifica la información del producto' : 'Añade un nuevo producto a tu catálogo'}
+            </p>
+          </div>
         </div>
+        
+        <button
+          type="submit"
+          form="product-form"
+          disabled={isSubmitting}
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-1"
+        >
+          {isSubmitting ? (
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            product ? 'Actualizar' : 'Publicar'
+          )}
+        </button>
       </div>
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 gap-6">
-          {/* Main Image - 1080x1080 format */}
-          <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4">
-            <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Imagen Principal</h2>
-            
-            <div className="flex flex-col items-center">
-              {formData.mainImage ? (
-                <div className="relative w-full max-w-md mx-auto">
-                  <div className="aspect-square w-full overflow-hidden rounded-lg">
-                    <img
-                      src={formData.mainImage}
-                      alt="Vista previa"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, mainImage: '' }))}
-                    className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="aspect-square w-full max-w-md mx-auto border-2 border-dashed border-gray-300 admin-dark:border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 admin-dark:hover:bg-indigo-900/20 transition-colors"
-                >
-                  <Upload className="w-12 h-12 text-gray-400 mb-4" />
-                  <p className="text-gray-600 admin-dark:text-gray-300 font-medium mb-2">Clic para subir imagen</p>
-                  <p className="text-sm text-gray-500 admin-dark:text-gray-400">Recomendado: 1080×1080px</p>
-                  <p className="text-xs text-gray-500 admin-dark:text-gray-400 mt-1">JPG, PNG o WEBP (máx. 5MB)</p>
-                </div>
-              )}
-              
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={(e) => handleImageUpload(e, 'main')}
-                className="hidden"
+      <form id="product-form" onSubmit={handleSubmit} className="p-4 space-y-4">
+        {/* Main Image - 1080x1080 format */}
+        <div className="bg-white admin-dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 admin-dark:border-gray-700 overflow-hidden">
+          {formData.mainImage ? (
+            <div className="relative">
+              <img
+                src={formData.mainImage}
+                alt="Vista previa"
+                className="w-full aspect-square object-cover"
               />
+              <button
+                type="button"
+                onClick={() => setFormData(prev => ({ ...prev, mainImage: '' }))}
+                className="absolute top-3 right-3 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          </div>
+          ) : (
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full aspect-square flex flex-col items-center justify-center cursor-pointer bg-gray-50 admin-dark:bg-gray-700 hover:bg-gray-100 admin-dark:hover:bg-gray-600 transition-colors"
+            >
+              <Upload className="w-10 h-10 text-gray-400 mb-3" />
+              <p className="text-gray-600 admin-dark:text-gray-300 font-medium mb-1">Subir imagen principal</p>
+              <p className="text-xs text-gray-500 admin-dark:text-gray-400">Recomendado: 1080×1080px</p>
+            </div>
+          )}
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleImageUpload(e, 'main')}
+            className="hidden"
+          />
+        </div>
 
-          {/* Basic Info */}
-          <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4">
-            <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Información Básica</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
-                  Nombre del producto *
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleInputChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
-                    errors.name ? 'border-red-300 admin-dark:border-red-500' : 'border-gray-300 admin-dark:border-gray-600'
-                  }`}
-                  placeholder="Ej: iPhone 15 Pro Max"
-                  maxLength={100}
-                />
-                {errors.name && <p className="text-red-500 admin-dark:text-red-400 text-sm mt-1">{errors.name}</p>}
-              </div>
+        {/* Basic Info */}
+        <div className="bg-white admin-dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-1">
+                Nombre del producto *
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 text-sm ${
+                  errors.name ? 'border-red-300 admin-dark:border-red-500' : 'border-gray-300 admin-dark:border-gray-600'
+                }`}
+                placeholder="Ej: Zapatillas deportivas"
+                maxLength={100}
+              />
+              {errors.name && <p className="text-red-500 admin-dark:text-red-400 text-xs mt-1">{errors.name}</p>}
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
-                  Descripción corta (opcional)
-                </label>
-                <input
-                  type="text"
-                  name="shortDescription"
-                  value={formData.shortDescription}
-                  onChange={handleInputChange}
-                  maxLength={100}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
-                    errors.shortDescription ? 'border-red-300 admin-dark:border-red-500' : 'border-gray-300 admin-dark:border-gray-600'
-                  }`}
-                  placeholder="Breve descripción para el catálogo"
-                />
-                <div className="flex justify-between items-center mt-1">
-                  {errors.shortDescription && <p className="text-red-500 admin-dark:text-red-400 text-sm">{errors.shortDescription}</p>}
-                  <p className="text-xs text-gray-500 admin-dark:text-gray-400 ml-auto">
-                    {formData.shortDescription.length}/100 caracteres
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
-                    Precio *
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleInputChange}
-                    min="0"
-                    step="0.01"
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
-                      errors.price ? 'border-red-300 admin-dark:border-red-500' : 'border-gray-300 admin-dark:border-gray-600'
-                    }`}
-                    placeholder="0.00"
-                  />
-                  {errors.price && <p className="text-red-500 admin-dark:text-red-400 text-sm mt-1">{errors.price}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
-                    Categoría *
-                  </label>
-                  <select
-                    name="categoryId"
-                    value={formData.categoryId}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white ${
-                      errors.categoryId ? 'border-red-300 admin-dark:border-red-500' : 'border-gray-300 admin-dark:border-gray-600'
-                    }`}
-                  >
-                    <option value="">Seleccionar categoría</option>
-                    {categories.map(category => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.categoryId && <p className="text-red-500 admin-dark:text-red-400 text-sm mt-1">{errors.categoryId}</p>}
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-1">
+                Descripción corta (opcional)
+              </label>
+              <input
+                type="text"
+                name="shortDescription"
+                value={formData.shortDescription}
+                onChange={handleInputChange}
+                maxLength={100}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 text-sm ${
+                  errors.shortDescription ? 'border-red-300 admin-dark:border-red-500' : 'border-gray-300 admin-dark:border-gray-600'
+                }`}
+                placeholder="Breve descripción para el catálogo"
+              />
+              <div className="flex justify-end">
+                <p className="text-xs text-gray-500 admin-dark:text-gray-400 mt-1">
+                  {formData.shortDescription.length}/100
+                </p>
               </div>
             </div>
-          </div>
 
-          {/* Gallery */}
-          <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4">
-            <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">
-              Galería Adicional
-              <span className="text-sm font-normal text-gray-500 admin-dark:text-gray-400 ml-2">(Hasta 5 imágenes)</span>
-            </h2>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {formData.gallery.map((image, index) => (
-                <div key={index} className="relative aspect-square">
-                  <img
-                    src={image}
-                    alt={`Galería ${index + 1}`}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeGalleryImage(index)}
-                    className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              ))}
-              
-              {formData.gallery.length < 5 && (
-                <div
-                  onClick={() => galleryInputRef.current?.click()}
-                  className="aspect-square border-2 border-dashed border-gray-300 admin-dark:border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 admin-dark:hover:bg-indigo-900/20 transition-colors"
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-1">
+                  Precio *
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleInputChange}
+                  min="0"
+                  step="0.01"
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 text-sm ${
+                    errors.price ? 'border-red-300 admin-dark:border-red-500' : 'border-gray-300 admin-dark:border-gray-600'
+                  }`}
+                  placeholder="0.00"
+                />
+                {errors.price && <p className="text-red-500 admin-dark:text-red-400 text-xs mt-1">{errors.price}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-1">
+                  Categoría *
+                </label>
+                <select
+                  name="categoryId"
+                  value={formData.categoryId}
+                  onChange={handleInputChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white text-sm ${
+                    errors.categoryId ? 'border-red-300 admin-dark:border-red-500' : 'border-gray-300 admin-dark:border-gray-600'
+                  }`}
                 >
-                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                  <p className="text-xs text-gray-500 admin-dark:text-gray-400">Añadir imagen</p>
-                </div>
-              )}
-            </div>
-            
-            <input
-              ref={galleryInputRef}
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleImageUpload(e, 'gallery')}
-              className="hidden"
-            />
-          </div>
-
-          {/* Settings */}
-          <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4">
-            <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Configuración</h2>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 admin-dark:text-gray-300">Estado</label>
-                  <p className="text-xs text-gray-500 admin-dark:text-gray-400">Mostrar producto en el catálogo</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="isActive"
-                    checked={formData.isActive}
-                    onChange={handleInputChange}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 admin-dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
-                </label>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 admin-dark:text-gray-300">Producto Destacado</label>
-                  <p className="text-xs text-gray-500 admin-dark:text-gray-400">Mostrar con una insignia especial</p>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="isFeatured"
-                    checked={formData.isFeatured}
-                    onChange={handleInputChange}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-gray-200 admin-dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-yellow-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
-                </label>
+                  <option value="">Seleccionar categoría</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                {errors.categoryId && <p className="text-red-500 admin-dark:text-red-400 text-xs mt-1">{errors.categoryId}</p>}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-end gap-4 pt-6 border-t border-gray-200 admin-dark:border-gray-700">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="px-6 py-3 border border-gray-300 admin-dark:border-gray-600 text-gray-700 admin-dark:text-gray-300 rounded-lg hover:bg-gray-50 admin-dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            {isSubmitting ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Guardando...
-              </>
-            ) : (
-              product ? 'Actualizar Producto' : 'Crear Producto'
+        {/* Gallery */}
+        <div className="bg-white admin-dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium text-gray-700 admin-dark:text-gray-300">Galería adicional</h2>
+            <span className="text-xs text-gray-500 admin-dark:text-gray-400">{formData.gallery.length}/5 imágenes</span>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-2">
+            {formData.gallery.map((image, index) => (
+              <div key={index} className="relative aspect-square">
+                <img
+                  src={image}
+                  alt={`Galería ${index + 1}`}
+                  className="w-full h-full object-cover rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeGalleryImage(index)}
+                  className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+            
+            {formData.gallery.length < 5 && (
+              <div
+                onClick={() => galleryInputRef.current?.click()}
+                className="aspect-square border-2 border-dashed border-gray-300 admin-dark:border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 admin-dark:hover:bg-indigo-900/20 transition-colors"
+              >
+                <Plus className="w-5 h-5 text-gray-400" />
+              </div>
             )}
-          </button>
+          </div>
+          
+          <input
+            ref={galleryInputRef}
+            type="file"
+            accept="image/*"
+            onChange={(e) => handleImageUpload(e, 'gallery')}
+            className="hidden"
+          />
         </div>
+
+        {/* Settings */}
+        <div className="bg-white admin-dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4">
+          <h2 className="text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-3">Configuración</h2>
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm text-gray-700 admin-dark:text-gray-300">Estado</label>
+                <p className="text-xs text-gray-500 admin-dark:text-gray-400">Mostrar en catálogo</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="isActive"
+                  checked={formData.isActive}
+                  onChange={handleInputChange}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-gray-200 admin-dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm text-gray-700 admin-dark:text-gray-300">Destacado</label>
+                <p className="text-xs text-gray-500 admin-dark:text-gray-400">Mostrar con insignia</p>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  name="isFeatured"
+                  checked={formData.isFeatured}
+                  onChange={handleInputChange}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-gray-200 admin-dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-yellow-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-500"></div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Bottom Padding */}
+        <div className="h-20"></div>
       </form>
+
+      {/* Bottom Action Bar - Mobile */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white admin-dark:bg-gray-800 border-t border-gray-200 admin-dark:border-gray-700 p-3 flex justify-between items-center">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={isSubmitting}
+          className="px-4 py-2 border border-gray-300 admin-dark:border-gray-600 text-gray-700 admin-dark:text-gray-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          form="product-form"
+          disabled={isSubmitting}
+          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+        >
+          {isSubmitting ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span>Guardando...</span>
+            </>
+          ) : (
+            <span>{product ? 'Actualizar' : 'Publicar'}</span>
+          )}
+        </button>
+      </div>
     </div>
   );
 }
