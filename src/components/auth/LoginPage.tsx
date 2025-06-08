@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { useStore } from '../../contexts/StoreContext';
 import { supabase } from '../../lib/supabase';
 
 export default function LoginPage() {
@@ -13,15 +12,19 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-  const { state } = useStore();
 
-  // ✅ SOLUCIÓN CRÍTICA: Redirigir automáticamente cuando el usuario se autentique
+  // Verificar si ya hay una sesión activa
   useEffect(() => {
-    if (state.isAuthenticated && !isLoading) {
-      console.log('[LoginPage] User authenticated, redirecting to admin...');
-      navigate('/admin', { replace: true });
+    checkUser();
+  }, []);
+
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      console.log('Session found, redirecting...');
+      navigate('/admin');
     }
-  }, [state.isAuthenticated, isLoading, navigate]);
+  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -46,78 +49,66 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  if (!validateForm()) return;
-
-  setIsLoading(true);
-  setErrors({});
-
-  try {
-    console.log('[LoginPage] Attempting auth:', { isRegister, email });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     
-    if (isRegister) {
-      // Registro con Supabase
-      const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
-        password: password,
-        options: {
-          data: {
-            name: name.trim(),
-            plan: 'gratuito'
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+    setErrors({});
+
+    try {
+      if (isRegister) {
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password: password,
+          options: {
+            data: {
+              name: name.trim(),
+              plan: 'gratuito'
+            }
           }
-        }
-      });
-
-      if (error) {
-        console.error('Registration error:', error);
-        setErrors({ general: error.message || 'Error al crear la cuenta. Intenta de nuevo.' });
-        setIsLoading(false);
-        return;
-      }
-
-      if (data.user && !data.session) {
-        setErrors({ 
-          general: 'Te hemos enviado un email de confirmación. Por favor revisa tu bandeja de entrada.' 
         });
-        setIsLoading(false);
-        return;
-      }
 
-      // Registro exitoso con sesión activa
-      if (data.session) {
-        window.location.href = '/admin';
-        return;
-      }
-      
-    } else {
-      // Inicio de sesión con Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password
-      });
+        if (error) {
+          setErrors({ general: error.message });
+          setIsLoading(false);
+          return;
+        }
 
-      if (error) {
-        console.error('Login error:', error);
-        setErrors({ general: 'Email o contraseña incorrectos.' });
-        setIsLoading(false);
-        return;
-      }
+        if (data.user && !data.session) {
+          setErrors({ 
+            general: 'Te hemos enviado un email de confirmación. Por favor revisa tu bandeja de entrada.' 
+          });
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password: password
+        });
 
-      // Login exitoso - redirección inmediata
-      if (data.session) {
-        console.log('[LoginPage] Login successful, redirecting...');
-        window.location.href = '/admin';
-        return;
+        if (error) {
+          setErrors({ general: 'Email o contraseña incorrectos.' });
+          setIsLoading(false);
+          return;
+        }
+
+        // Login exitoso - esperar un momento y redirigir
+        if (data.session) {
+          console.log('Login successful!');
+          setTimeout(() => {
+            navigate('/admin');
+          }, 100);
+          return;
+        }
       }
+    } catch (error) {
+      console.error('Auth error:', error);
+      setErrors({ general: 'Error de conexión. Por favor intenta de nuevo.' });
+      setIsLoading(false);
     }
-    
-  } catch (error) {
-    console.error('Auth error:', error);
-    setErrors({ general: 'Error de conexión. Por favor intenta de nuevo.' });
-    setIsLoading(false);
-  }
     // ✅ sIMPORTANTE: No setear isLoading(false) aquí para mantener el estado de carga hasta la redirección
   };
 
