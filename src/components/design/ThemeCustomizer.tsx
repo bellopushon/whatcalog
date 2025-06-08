@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Palette, Smartphone, Save, Monitor } from 'lucide-react';
+import { Palette, Smartphone, Save, Monitor, Check } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useTheme, COLOR_PALETTES } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -87,21 +87,21 @@ export default function ThemeCustomizer() {
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6">
+    <div className="space-y-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl lg:text-2xl font-bold text-gray-900 admin-dark:text-white">Diseño de la Tienda</h1>
-          <p className="text-gray-600 admin-dark:text-gray-300 text-sm lg:text-base mt-1">Personaliza la apariencia de tu catálogo</p>
+          <h1 className="text-2xl font-bold text-gray-900 admin-dark:text-white">Diseño de la Tienda</h1>
+          <p className="text-gray-600 admin-dark:text-gray-300 mt-1">Personaliza la apariencia de tu catálogo</p>
         </div>
         
         {/* Save Button - Always Visible */}
         <button
           onClick={handleSaveChanges}
           disabled={isSaving || !hasUnsavedChanges}
-          className={`flex items-center gap-2 px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium transition-all ${
+          className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
             hasUnsavedChanges
-              ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg'
+              ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg hover:shadow-xl transform hover:scale-105'
               : 'bg-gray-100 admin-dark:bg-gray-700 text-gray-400 admin-dark:text-gray-500 cursor-not-allowed'
           }`}
         >
@@ -123,89 +123,135 @@ export default function ThemeCustomizer() {
 
       {/* Unsaved Changes Warning */}
       {hasUnsavedChanges && (
-        <div className="bg-yellow-50 admin-dark:bg-yellow-900/20 border border-yellow-200 admin-dark:border-yellow-700 rounded-lg p-3">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-            <p className="text-yellow-800 admin-dark:text-yellow-200 text-sm font-medium">
+        <div className="bg-amber-50 admin-dark:bg-amber-900/20 border border-amber-200 admin-dark:border-amber-700 rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
+            <p className="text-amber-800 admin-dark:text-amber-200 text-sm font-medium">
               Tienes cambios sin guardar. Haz clic en "Guardar Cambios" para aplicarlos.
             </p>
           </div>
         </div>
       )}
 
-      {/* Color Palettes */}
-      <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
-        <div className="flex items-center gap-3 mb-4 lg:mb-6">
-          <Palette className="w-6 h-6 text-indigo-600" />
-          <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white">Paletas de Colores</h2>
+      {/* Color Palettes - Modern Design */}
+      <div className="bg-white admin-dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-6 lg:p-8">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <Palette className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 admin-dark:text-white">Paletas de Colores</h2>
+            <p className="text-sm text-gray-600 admin-dark:text-gray-300">Elige el estilo visual de tu catálogo</p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Modern Grid Layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
           {COLOR_PALETTES.map((palette) => (
             <div
               key={palette.id}
               onClick={() => handlePaletteChange(palette.id)}
-              className={`border-2 rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
+              className={`group relative bg-white admin-dark:bg-gray-700 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105 border-2 ${
                 selectedPalette === palette.id
-                  ? 'border-indigo-500 bg-indigo-50 admin-dark:bg-indigo-900/30 ring-2 ring-indigo-200 admin-dark:ring-indigo-800'
-                  : 'border-gray-200 admin-dark:border-gray-600 hover:border-gray-300 admin-dark:hover:border-gray-500'
+                  ? 'border-indigo-500 shadow-lg shadow-indigo-500/20'
+                  : 'border-gray-100 admin-dark:border-gray-600 hover:border-gray-200 admin-dark:hover:border-gray-500'
               }`}
             >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex gap-1">
-                  <div 
-                    className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
-                    style={{ backgroundColor: palette.primary }}
-                  ></div>
-                  <div 
-                    className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
-                    style={{ backgroundColor: palette.secondary }}
-                  ></div>
+              {/* Selection Indicator */}
+              {selectedPalette === palette.id && (
+                <div className="absolute -top-2 -right-2 w-6 h-6 bg-indigo-500 rounded-full flex items-center justify-center shadow-lg">
+                  <Check className="w-3 h-3 text-white" />
                 </div>
+              )}
+
+              {/* Color Dots */}
+              <div className="flex items-center gap-3 mb-4">
+                <div 
+                  className="w-8 h-8 rounded-full border-2 border-white shadow-md"
+                  style={{ backgroundColor: palette.primary }}
+                ></div>
+                <div 
+                  className="w-8 h-8 rounded-full border-2 border-white shadow-md"
+                  style={{ backgroundColor: palette.secondary }}
+                ></div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900 admin-dark:text-white text-sm">{palette.name}</h3>
-                  {selectedPalette === palette.id && (
-                    <span className="text-indigo-600 admin-dark:text-indigo-400 text-xs font-medium">✓ Seleccionado</span>
-                  )}
+                  <div className="w-full h-1 bg-gradient-to-r rounded-full"
+                       style={{ 
+                         background: `linear-gradient(90deg, ${palette.primary} 0%, ${palette.secondary} 100%)`
+                       }}
+                  ></div>
                 </div>
               </div>
-              <p className="text-xs leading-relaxed line-clamp-2 text-gray-700 admin-dark:text-gray-300">{palette.description}</p>
+
+              {/* Palette Info */}
+              <div>
+                <h3 className="font-semibold text-gray-900 admin-dark:text-white mb-2 group-hover:text-indigo-600 admin-dark:group-hover:text-indigo-400 transition-colors">
+                  {palette.name}
+                </h3>
+                <p className="text-sm text-gray-600 admin-dark:text-gray-300 leading-relaxed">
+                  {palette.description}
+                </p>
+              </div>
+
+              {/* Selected Badge */}
+              {selectedPalette === palette.id && (
+                <div className="mt-4 flex items-center gap-2 text-indigo-600 admin-dark:text-indigo-400">
+                  <Check className="w-4 h-4" />
+                  <span className="text-sm font-medium">Seleccionado</span>
+                </div>
+              )}
             </div>
           ))}
         </div>
 
         {/* Current Palette Preview */}
-        <div className="mt-6 p-4 bg-gray-50 admin-dark:bg-gray-700 rounded-lg">
-          <h3 className="font-medium text-gray-900 admin-dark:text-white mb-2">Vista Previa del Tema Actual</h3>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+        <div className="mt-8 p-6 bg-gray-50 admin-dark:bg-gray-700 rounded-2xl">
+          <h3 className="font-semibold text-gray-900 admin-dark:text-white mb-4">Vista Previa del Tema Actual</h3>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
               <div 
-                className="w-8 h-8 rounded-lg shadow-sm border border-gray-200 admin-dark:border-gray-600"
+                className="w-12 h-12 rounded-xl shadow-md border-2 border-white"
                 style={{ backgroundColor: currentPaletteData.primary }}
               ></div>
-              <span className="text-sm text-gray-700 admin-dark:text-gray-300">Primario</span>
+              <div>
+                <p className="text-sm font-medium text-gray-900 admin-dark:text-white">Primario</p>
+                <p className="text-xs text-gray-600 admin-dark:text-gray-300 font-mono">{currentPaletteData.primary}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <div 
-                className="w-8 h-8 rounded-lg shadow-sm border border-gray-200 admin-dark:border-gray-600"
+                className="w-12 h-12 rounded-xl shadow-md border-2 border-white"
                 style={{ backgroundColor: currentPaletteData.secondary }}
               ></div>
-              <span className="text-sm text-gray-700 admin-dark:text-gray-300">Secundario</span>
+              <div>
+                <p className="text-sm font-medium text-gray-900 admin-dark:text-white">Secundario</p>
+                <p className="text-xs text-gray-600 admin-dark:text-gray-300 font-mono">{currentPaletteData.secondary}</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Border Radius Configuration - Más minimalista y responsivo */}
-      <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
-        <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Radio del Borde</h2>
+      {/* Border Radius Configuration */}
+      <div className="bg-white admin-dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-6 lg:p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center">
+            <div className="w-4 h-4 bg-white rounded" style={{ borderRadius: `${selectedRadius/4}px` }}></div>
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 admin-dark:text-white">Radio del Borde</h2>
+            <p className="text-sm text-gray-600 admin-dark:text-gray-300">Ajusta el redondeado de los elementos</p>
+          </div>
+        </div>
         
-        <div className="space-y-4">
-          {/* Slider Control - Más compacto */}
-          <div className="space-y-2">
+        <div className="space-y-6">
+          {/* Slider Control */}
+          <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600 admin-dark:text-gray-300">Redondeado</span>
-              <span className="text-sm font-medium text-gray-900 admin-dark:text-white">{selectedRadius}px</span>
+              <span className="text-sm font-medium text-gray-700 admin-dark:text-gray-300">Redondeado</span>
+              <span className="text-lg font-bold text-gray-900 admin-dark:text-white bg-gray-100 admin-dark:bg-gray-700 px-3 py-1 rounded-lg">
+                {selectedRadius}px
+              </span>
             </div>
             
             <input
@@ -214,7 +260,7 @@ export default function ThemeCustomizer() {
               max="20"
               value={selectedRadius}
               onChange={(e) => handleRadiusChange(parseInt(e.target.value))}
-              className="w-full h-2 bg-gray-200 admin-dark:bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-3 bg-gray-200 admin-dark:bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
             />
             
             <div className="flex justify-between text-xs text-gray-500 admin-dark:text-gray-400">
@@ -224,62 +270,62 @@ export default function ThemeCustomizer() {
             </div>
           </div>
 
-          {/* Live Preview - Más compacto y similar al catálogo real */}
-          <div className="mt-4">
-            <h3 className="font-medium text-gray-900 admin-dark:text-white text-sm mb-3">Vista Previa</h3>
+          {/* Live Preview */}
+          <div className="bg-gray-50 admin-dark:bg-gray-700 rounded-2xl p-6">
+            <h3 className="font-semibold text-gray-900 admin-dark:text-white text-sm mb-4">Vista Previa</h3>
             
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {/* Tarjeta de Producto - Tamaño real del catálogo */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {/* Product Card Preview */}
               <div>
                 <div 
-                  className="bg-white admin-dark:bg-gray-700 border border-gray-200 admin-dark:border-gray-600 overflow-hidden shadow-sm"
+                  className="bg-white admin-dark:bg-gray-600 border border-gray-200 admin-dark:border-gray-500 overflow-hidden shadow-sm"
                   style={{ borderRadius: `${selectedRadius}px` }}
                 >
-                  <div className="aspect-square bg-gray-100 admin-dark:bg-gray-600 flex items-center justify-center">
+                  <div className="aspect-square bg-gray-100 admin-dark:bg-gray-500 flex items-center justify-center">
                     <span className="text-gray-400 text-xs">Imagen</span>
                   </div>
-                  <div className="p-2">
+                  <div className="p-3">
                     <h5 className="font-medium text-gray-900 admin-dark:text-white text-xs truncate">Producto</h5>
                     <p className="text-xs text-gray-600 admin-dark:text-gray-300">$29.99</p>
                     <button 
-                      className="mt-1 text-white text-xs px-2 py-1 font-medium w-full"
+                      className="mt-2 text-white text-xs px-3 py-1.5 font-medium w-full"
                       style={{ 
                         backgroundColor: currentPaletteData.primary,
                         borderRadius: `${Math.max(selectedRadius - 2, 0)}px`
                       }}
                     >
-                      +
+                      Añadir
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Botón Primario */}
-              <div>
+              {/* Button Preview */}
+              <div className="flex items-center">
                 <button 
-                  className="w-full text-white py-2 px-3 text-xs font-medium"
+                  className="w-full text-white py-3 px-4 text-sm font-medium"
                   style={{ 
                     backgroundColor: currentPaletteData.primary,
                     borderRadius: `${selectedRadius}px`
                   }}
                 >
-                  Botón Primario
+                  Botón
                 </button>
               </div>
 
-              {/* Campo de Texto */}
-              <div>
+              {/* Input Preview */}
+              <div className="flex items-center">
                 <input 
                   type="text" 
                   placeholder="Campo de texto"
-                  className="w-full border border-gray-300 admin-dark:border-gray-600 px-2 py-2 text-xs admin-dark:bg-gray-700 admin-dark:text-white"
+                  className="w-full border border-gray-300 admin-dark:border-gray-600 px-3 py-3 text-xs admin-dark:bg-gray-600 admin-dark:text-white"
                   style={{ borderRadius: `${selectedRadius}px` }}
                 />
               </div>
 
-              {/* Estilo */}
-              <div>
-                <div className="bg-gray-50 admin-dark:bg-gray-700 p-2 rounded text-xs text-gray-600 admin-dark:text-gray-300 text-center"
+              {/* Style Label */}
+              <div className="flex items-center">
+                <div className="w-full bg-gray-100 admin-dark:bg-gray-600 p-3 text-xs text-gray-600 admin-dark:text-gray-300 text-center font-medium"
                      style={{ borderRadius: `${selectedRadius}px` }}>
                   {selectedRadius === 0 && "Cuadrado"}
                   {selectedRadius > 0 && selectedRadius <= 5 && "Profesional"}
@@ -293,17 +339,22 @@ export default function ThemeCustomizer() {
       </div>
 
       {/* Products Per Page */}
-      <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Smartphone className="w-6 h-6 text-green-600" />
-          <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white">Productos por Página</h2>
+      <div className="bg-white admin-dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-6 lg:p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-600 rounded-xl flex items-center justify-center">
+            <Smartphone className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 admin-dark:text-white">Productos por Página</h2>
+            <p className="text-sm text-gray-600 admin-dark:text-gray-300">Controla cuántos productos se muestran</p>
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <select
             value={productsPerPage}
             onChange={(e) => handleProductsPerPageChange(parseInt(e.target.value))}
-            className="px-4 py-2 border border-gray-300 admin-dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm lg:text-base admin-dark:bg-gray-700 admin-dark:text-white"
+            className="px-4 py-3 border border-gray-300 admin-dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:text-white"
           >
             {PRODUCTS_PER_PAGE_OPTIONS.map(count => (
               <option key={count} value={count}>
@@ -319,17 +370,17 @@ export default function ThemeCustomizer() {
 
       {/* Preview Link */}
       {store && (
-        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 admin-dark:from-gray-800 admin-dark:to-gray-900 rounded-xl border border-indigo-200 admin-dark:border-indigo-800 p-4">
+        <div className="bg-gradient-to-r from-indigo-50 to-purple-50 admin-dark:from-gray-800 admin-dark:to-gray-900 rounded-2xl border border-indigo-200 admin-dark:border-indigo-800 p-6 lg:p-8">
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-2">¿Quieres ver cómo se ve?</h3>
-            <p className="text-gray-700 admin-dark:text-gray-300 mb-4 text-sm">
+            <h3 className="text-xl font-semibold text-gray-900 admin-dark:text-white mb-3">¿Quieres ver cómo se ve?</h3>
+            <p className="text-gray-700 admin-dark:text-gray-300 mb-6">
               Revisa tu catálogo con los cambios aplicados
             </p>
             <a
               href={`/store/${store.slug}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              className="inline-flex items-center gap-3 bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-xl font-medium transition-all hover:shadow-lg hover:scale-105"
             >
               <Monitor className="w-5 h-5" />
               Ver Catálogo
@@ -344,7 +395,7 @@ export default function ThemeCustomizer() {
           <button
             onClick={handleSaveChanges}
             disabled={isSaving}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white py-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-lg"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white py-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 shadow-lg"
           >
             {isSaving ? (
               <>
