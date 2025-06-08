@@ -445,7 +445,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const initAuth = async () => {
       try {
         console.log('Checking for existing session...');
-        dispatch({ type: 'SET_LOADING', payload: true });
         
         const { data: { session }, error } = await supabase.auth.getSession();
         
@@ -480,6 +479,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           dispatch({ type: 'SET_LOADING', payload: false });
         }
         
+        // ✅ CRITICAL: Always set initialized to true after checking session
         dispatch({ type: 'SET_INITIALIZED', payload: true });
       } catch (error) {
         console.error('Auth initialization error:', error);
