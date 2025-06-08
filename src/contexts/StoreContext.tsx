@@ -437,8 +437,12 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // Initialize auth
   useEffect(() => {
     let mounted = true;
+    let isInitializing = false;
 
     const initAuth = async () => {
+      if (isInitializing) return;
+      isInitializing = true;
+
       try {
         console.log('Checking for existing session...');
         
@@ -497,6 +501,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           dispatch({ type: 'SET_INITIALIZED', payload: true });
           dispatch({ type: 'SET_AUTHENTICATED', payload: false });
         }
+      } finally {
+        isInitializing = false;
       }
     };
 
@@ -511,37 +517,41 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
         if (event === 'SIGNED_IN' && session?.user) {
           console.log('User signed in:', session.user.email);
-          dispatch({ type: 'SET_LOADING', payload: true });
           
-          // Create or update user profile in database
-          const { error: upsertError } = await supabase
-            .from('users')
-            .upsert({
-              id: session.user.id,
-              email: session.user.email!,
-              name: session.user.user_metadata?.name || session.user.email!.split('@')[0],
-              plan: 'gratuito',
-              updated_at: new Date().toISOString()
-            }, {
-              onConflict: 'id'
-            });
+          // Only process if not already authenticated to avoid double loading
+          if (!state.isAuthenticated) {
+            dispatch({ type: 'SET_LOADING', payload: true });
+            
+            // Create or update user profile in database
+            const { error: upsertError } = await supabase
+              .from('users')
+              .upsert({
+                id: session.user.id,
+                email: session.user.email!,
+                name: session.user.user_metadata?.name || session.user.email!.split('@')[0],
+                plan: 'gratuito',
+                updated_at: new Date().toISOString()
+              }, {
+                onConflict: 'id'
+              });
 
-          if (upsertError) {
-            console.error('Error upserting user:', upsertError);
+            if (upsertError) {
+              console.error('Error upserting user:', upsertError);
+            }
+
+            // Load user data from database
+            const { data: userData } = await supabase
+              .from('users')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+
+            const appUser = transformSupabaseUserToAppUser(session.user, userData);
+            dispatch({ type: 'SET_USER', payload: appUser });
+            
+            // Load stores
+            await loadUserData(session.user.id);
           }
-
-          // Load user data from database
-          const { data: userData } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          const appUser = transformSupabaseUserToAppUser(session.user, userData);
-          dispatch({ type: 'SET_USER', payload: appUser });
-          
-          // Load stores
-          await loadUserData(session.user.id);
 
         } else if (event === 'SIGNED_OUT') {
           console.log('User signed out');
