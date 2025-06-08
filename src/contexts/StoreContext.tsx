@@ -22,6 +22,29 @@ export interface User {
   updatedAt?: string;
 }
 
+export interface Category {
+  id: string;
+  storeId: string;
+  name: string;
+  createdAt: string;
+}
+
+export interface Product {
+  id: string;
+  storeId: string;
+  categoryId?: string;
+  name: string;
+  shortDescription?: string;
+  longDescription?: string;
+  price: number;
+  mainImage?: string;
+  gallery: string[];
+  isActive: boolean;
+  isFeatured: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Store {
   id: string;
   userId: string;
@@ -34,7 +57,6 @@ export interface Store {
   headingFont: string;
   bodyFont: string;
   colorPalette: string;
-  themeMode: 'light' | 'dark' | 'system';
   borderRadius: number;
   productsPerPage: number;
   facebookUrl?: string;
@@ -56,6 +78,9 @@ export interface Store {
   includeCommentsInMessage: boolean;
   createdAt: string;
   updatedAt: string;
+  // Relaciones
+  categories: Category[];
+  products: Product[];
 }
 
 export interface StoreState {
@@ -85,6 +110,12 @@ type ActionType =
   | { type: 'ADD_STORE'; payload: Store }
   | { type: 'UPDATE_STORE'; payload: Partial<Store> }
   | { type: 'DELETE_STORE'; payload: string }
+  | { type: 'ADD_CATEGORY'; payload: Category }
+  | { type: 'UPDATE_CATEGORY'; payload: Category }
+  | { type: 'DELETE_CATEGORY'; payload: string }
+  | { type: 'ADD_PRODUCT'; payload: Product }
+  | { type: 'UPDATE_PRODUCT'; payload: Product }
+  | { type: 'DELETE_PRODUCT'; payload: string }
   | { type: 'SET_AUTHENTICATED'; payload: boolean }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_INITIALIZED'; payload: boolean }
@@ -130,6 +161,93 @@ function storeReducer(state: StoreState, action: ActionType): StoreState {
         stores: filteredStores,
         currentStore: newCurrentStore
       };
+    case 'ADD_CATEGORY':
+      if (!state.currentStore) return state;
+      const storeWithNewCategory = {
+        ...state.currentStore,
+        categories: [...state.currentStore.categories, action.payload]
+      };
+      return {
+        ...state,
+        currentStore: storeWithNewCategory,
+        stores: state.stores.map(store =>
+          store.id === state.currentStore?.id ? storeWithNewCategory : store
+        )
+      };
+    case 'UPDATE_CATEGORY':
+      if (!state.currentStore) return state;
+      const storeWithUpdatedCategory = {
+        ...state.currentStore,
+        categories: state.currentStore.categories.map(cat =>
+          cat.id === action.payload.id ? action.payload : cat
+        )
+      };
+      return {
+        ...state,
+        currentStore: storeWithUpdatedCategory,
+        stores: state.stores.map(store =>
+          store.id === state.currentStore?.id ? storeWithUpdatedCategory : store
+        )
+      };
+    case 'DELETE_CATEGORY':
+      if (!state.currentStore) return state;
+      const storeWithoutCategory = {
+        ...state.currentStore,
+        categories: state.currentStore.categories.filter(cat => cat.id !== action.payload),
+        products: state.currentStore.products.map(product =>
+          product.categoryId === action.payload
+            ? { ...product, categoryId: undefined }
+            : product
+        )
+      };
+      return {
+        ...state,
+        currentStore: storeWithoutCategory,
+        stores: state.stores.map(store =>
+          store.id === state.currentStore?.id ? storeWithoutCategory : store
+        )
+      };
+    case 'ADD_PRODUCT':
+      if (!state.currentStore) return state;
+      const storeWithNewProduct = {
+        ...state.currentStore,
+        products: [...state.currentStore.products, action.payload]
+      };
+      return {
+        ...state,
+        currentStore: storeWithNewProduct,
+        stores: state.stores.map(store =>
+          store.id === state.currentStore?.id ? storeWithNewProduct : store
+        )
+      };
+    case 'UPDATE_PRODUCT':
+      if (!state.currentStore) return state;
+      const storeWithUpdatedProduct = {
+        ...state.currentStore,
+        products: state.currentStore.products.map(product =>
+          product.id === action.payload.id ? action.payload : product
+        )
+      };
+      return {
+        ...state,
+        currentStore: storeWithUpdatedProduct,
+        stores: state.stores.map(store =>
+          store.id === state.currentStore?.id ? storeWithUpdatedProduct : store
+        )
+      };
+    case 'DELETE_PRODUCT':
+      if (!state.currentStore) return state;
+      const storeWithoutProduct = {
+        ...state.currentStore,
+        products: state.currentStore.products.filter(product => product.id !== action.payload)
+      };
+      return {
+        ...state,
+        currentStore: storeWithoutProduct,
+        stores: state.stores.map(store =>
+          store.id === state.currentStore?.id ? storeWithoutProduct : store
+        )
+      };
     case 'SET_AUTHENTICATED':
       return { ...state, isAuthenticated: action.payload };
     case 'SET_LOADING':
@@ -152,10 +270,18 @@ const StoreContext = createContext<{
   dispatch: Dispatch<ActionType>;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
-  createStore: (storeData: Omit<Store, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<Store>;
+  createStore: (storeData: Omit<Store, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'categories' | 'products'>) => Promise<Store>;
   updateStore: (storeData: Partial<Store>) => Promise<void>;
+  createCategory: (categoryData: Omit<Category, 'id' | 'storeId' | 'createdAt'>) => Promise<Category>;
+  updateCategory: (categoryData: Category) => Promise<void>;
+  deleteCategory: (categoryId: string) => Promise<void>;
+  createProduct: (productData: Omit<Product, 'id' | 'storeId' | 'createdAt' | 'updatedAt'>) => Promise<Product>;
+  updateProduct: (productData: Product) => Promise<void>;
+  deleteProduct: (productId: string) => Promise<void>;
   canCreateStore: () => boolean;
   getMaxStores: () => number;
+  getMaxProducts: () => number;
+  getMaxCategories: () => number;
 }>({
   state: initialState,
   dispatch: () => null,
@@ -163,11 +289,19 @@ const StoreContext = createContext<{
   register: async () => {},
   createStore: async () => ({} as Store),
   updateStore: async () => {},
+  createCategory: async () => ({} as Category),
+  updateCategory: async () => {},
+  deleteCategory: async () => {},
+  createProduct: async () => ({} as Product),
+  updateProduct: async () => {},
+  deleteProduct: async () => {},
   canCreateStore: () => false,
   getMaxStores: () => 1,
+  getMaxProducts: () => 10,
+  getMaxCategories: () => 3,
 });
 
-// Funciones auxiliares
+// Funciones auxiliares de transformación
 function transformSupabaseUserToAppUser(supabaseUser: any, userData: any): User {
   return {
     id: supabaseUser.id,
@@ -190,7 +324,7 @@ function transformSupabaseUserToAppUser(supabaseUser: any, userData: any): User 
   };
 }
 
-function transformSupabaseStoreToAppStore(storeData: any): Store {
+function transformSupabaseStoreToAppStore(storeData: any, categories: Category[] = [], products: Product[] = []): Store {
   return {
     id: storeData.id,
     userId: storeData.user_id,
@@ -203,7 +337,6 @@ function transformSupabaseStoreToAppStore(storeData: any): Store {
     headingFont: storeData.heading_font || 'Inter',
     bodyFont: storeData.body_font || 'Inter',
     colorPalette: storeData.color_palette || 'predeterminado',
-    themeMode: storeData.theme_mode || 'light',
     borderRadius: storeData.border_radius || 8,
     productsPerPage: storeData.products_per_page || 12,
     facebookUrl: storeData.facebook_url || undefined,
@@ -225,6 +358,35 @@ function transformSupabaseStoreToAppStore(storeData: any): Store {
     includeCommentsInMessage: storeData.include_comments_in_message ?? true,
     createdAt: storeData.created_at,
     updatedAt: storeData.updated_at,
+    categories,
+    products,
+  };
+}
+
+function transformSupabaseCategoryToAppCategory(categoryData: any): Category {
+  return {
+    id: categoryData.id,
+    storeId: categoryData.store_id,
+    name: categoryData.name,
+    createdAt: categoryData.created_at,
+  };
+}
+
+function transformSupabaseProductToAppProduct(productData: any): Product {
+  return {
+    id: productData.id,
+    storeId: productData.store_id,
+    categoryId: productData.category_id || undefined,
+    name: productData.name,
+    shortDescription: productData.short_description || undefined,
+    longDescription: productData.long_description || undefined,
+    price: parseFloat(productData.price),
+    mainImage: productData.main_image || undefined,
+    gallery: productData.gallery || [],
+    isActive: productData.is_active ?? true,
+    isFeatured: productData.is_featured ?? false,
+    createdAt: productData.created_at,
+    updatedAt: productData.updated_at,
   };
 }
 
@@ -240,7 +402,6 @@ function transformAppStoreToSupabaseUpdate(storeData: Partial<Store>) {
   if (storeData.headingFont !== undefined) supabaseData.heading_font = storeData.headingFont;
   if (storeData.bodyFont !== undefined) supabaseData.body_font = storeData.bodyFont;
   if (storeData.colorPalette !== undefined) supabaseData.color_palette = storeData.colorPalette;
-  if (storeData.themeMode !== undefined) supabaseData.theme_mode = storeData.themeMode;
   if (storeData.borderRadius !== undefined) supabaseData.border_radius = storeData.borderRadius;
   if (storeData.productsPerPage !== undefined) supabaseData.products_per_page = storeData.productsPerPage;
   if (storeData.facebookUrl !== undefined) supabaseData.facebook_url = storeData.facebookUrl;
@@ -282,6 +443,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const getMaxProducts = (): number => {
+    const userPlan = state.user?.plan || 'gratuito';
+    switch (userPlan) {
+      case 'gratuito': return 10;
+      case 'emprendedor': return 30;
+      case 'profesional': return 50;
+      default: return 10;
+    }
+  };
+
+  const getMaxCategories = (): number => {
+    const userPlan = state.user?.plan || 'gratuito';
+    switch (userPlan) {
+      case 'gratuito': return 3;
+      case 'emprendedor': return 999999; // Ilimitadas
+      case 'profesional': return 999999; // Ilimitadas
+      default: return 3;
+    }
+  };
+
   // Función para verificar si puede crear tiendas
   const canCreateStore = (): boolean => {
     const maxStores = getMaxStores();
@@ -290,7 +471,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   };
 
   // Función para crear tienda
-  const createStore = async (storeData: Omit<Store, 'id' | 'userId' | 'createdAt' | 'updatedAt'>): Promise<Store> => {
+  const createStore = async (storeData: Omit<Store, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'categories' | 'products'>): Promise<Store> => {
     if (!state.user) {
       throw new Error('Usuario no autenticado');
     }
@@ -326,7 +507,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         heading_font: storeData.headingFont,
         body_font: storeData.bodyFont,
         color_palette: storeData.colorPalette,
-        theme_mode: storeData.themeMode,
         border_radius: storeData.borderRadius,
         products_per_page: storeData.productsPerPage,
         facebook_url: storeData.facebookUrl,
@@ -355,7 +535,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       throw new Error('No se pudo crear la tienda. Intenta de nuevo.');
     }
 
-    const newStore = transformSupabaseStoreToAppStore(data);
+    const newStore = transformSupabaseStoreToAppStore(data, [], []);
     dispatch({ type: 'ADD_STORE', payload: newStore });
     
     return newStore;
@@ -403,11 +583,181 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
 
     // Actualizar estado local
-    const updatedStore = transformSupabaseStoreToAppStore(data);
-    dispatch({ type: 'UPDATE_STORE', payload: updatedStore });
+    const updatedStoreData = transformSupabaseStoreToAppStore(data, state.currentStore.categories, state.currentStore.products);
+    dispatch({ type: 'UPDATE_STORE', payload: updatedStoreData });
   };
 
-  // Función de login (sin cambios)
+  // Función para crear categoría
+  const createCategory = async (categoryData: Omit<Category, 'id' | 'storeId' | 'createdAt'>): Promise<Category> => {
+    if (!state.currentStore) {
+      throw new Error('No hay tienda seleccionada');
+    }
+
+    if (!state.user) {
+      throw new Error('Usuario no autenticado');
+    }
+
+    // Crear categoría en Supabase
+    const { data, error } = await supabase
+      .from('categories')
+      .insert({
+        store_id: state.currentStore.id,
+        name: categoryData.name.trim(),
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating category:', error);
+      if (error.message.includes('límite')) {
+        throw new Error(error.message);
+      }
+      throw new Error('No se pudo crear la categoría. Intenta de nuevo.');
+    }
+
+    const newCategory = transformSupabaseCategoryToAppCategory(data);
+    dispatch({ type: 'ADD_CATEGORY', payload: newCategory });
+    
+    return newCategory;
+  };
+
+  // Función para actualizar categoría
+  const updateCategory = async (categoryData: Category): Promise<void> => {
+    if (!state.user) {
+      throw new Error('Usuario no autenticado');
+    }
+
+    const { data, error } = await supabase
+      .from('categories')
+      .update({
+        name: categoryData.name.trim(),
+      })
+      .eq('id', categoryData.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating category:', error);
+      throw new Error('No se pudo actualizar la categoría. Intenta de nuevo.');
+    }
+
+    const updatedCategory = transformSupabaseCategoryToAppCategory(data);
+    dispatch({ type: 'UPDATE_CATEGORY', payload: updatedCategory });
+  };
+
+  // Función para eliminar categoría
+  const deleteCategory = async (categoryId: string): Promise<void> => {
+    if (!state.user) {
+      throw new Error('Usuario no autenticado');
+    }
+
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', categoryId);
+
+    if (error) {
+      console.error('Error deleting category:', error);
+      throw new Error('No se pudo eliminar la categoría. Intenta de nuevo.');
+    }
+
+    dispatch({ type: 'DELETE_CATEGORY', payload: categoryId });
+  };
+
+  // Función para crear producto
+  const createProduct = async (productData: Omit<Product, 'id' | 'storeId' | 'createdAt' | 'updatedAt'>): Promise<Product> => {
+    if (!state.currentStore) {
+      throw new Error('No hay tienda seleccionada');
+    }
+
+    if (!state.user) {
+      throw new Error('Usuario no autenticado');
+    }
+
+    // Crear producto en Supabase
+    const { data, error } = await supabase
+      .from('products')
+      .insert({
+        store_id: state.currentStore.id,
+        category_id: productData.categoryId || null,
+        name: productData.name.trim(),
+        short_description: productData.shortDescription?.trim() || null,
+        long_description: productData.longDescription?.trim() || null,
+        price: productData.price,
+        main_image: productData.mainImage || null,
+        gallery: productData.gallery || [],
+        is_active: productData.isActive,
+        is_featured: productData.isFeatured,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating product:', error);
+      if (error.message.includes('límite')) {
+        throw new Error(error.message);
+      }
+      throw new Error('No se pudo crear el producto. Intenta de nuevo.');
+    }
+
+    const newProduct = transformSupabaseProductToAppProduct(data);
+    dispatch({ type: 'ADD_PRODUCT', payload: newProduct });
+    
+    return newProduct;
+  };
+
+  // Función para actualizar producto
+  const updateProduct = async (productData: Product): Promise<void> => {
+    if (!state.user) {
+      throw new Error('Usuario no autenticado');
+    }
+
+    const { data, error } = await supabase
+      .from('products')
+      .update({
+        category_id: productData.categoryId || null,
+        name: productData.name.trim(),
+        short_description: productData.shortDescription?.trim() || null,
+        long_description: productData.longDescription?.trim() || null,
+        price: productData.price,
+        main_image: productData.mainImage || null,
+        gallery: productData.gallery || [],
+        is_active: productData.isActive,
+        is_featured: productData.isFeatured,
+      })
+      .eq('id', productData.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating product:', error);
+      throw new Error('No se pudo actualizar el producto. Intenta de nuevo.');
+    }
+
+    const updatedProduct = transformSupabaseProductToAppProduct(data);
+    dispatch({ type: 'UPDATE_PRODUCT', payload: updatedProduct });
+  };
+
+  // Función para eliminar producto
+  const deleteProduct = async (productId: string): Promise<void> => {
+    if (!state.user) {
+      throw new Error('Usuario no autenticado');
+    }
+
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', productId);
+
+    if (error) {
+      console.error('Error deleting product:', error);
+      throw new Error('No se pudo eliminar el producto. Intenta de nuevo.');
+    }
+
+    dispatch({ type: 'DELETE_PRODUCT', payload: productId });
+  };
+
+  // Función de login
   const login = async (email: string, password: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
@@ -434,7 +784,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Función de registro (sin cambios)
+  // Función de registro
   const register = async (email: string, password: string, name: string) => {
     try {
       dispatch({ type: 'SET_LOADING', payload: true });
@@ -470,21 +820,54 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Función para cargar tiendas del usuario
+  // Función para cargar tiendas del usuario con categorías y productos
   const loadUserStores = async (userId: string) => {
     try {
-      const { data: storesData, error } = await supabase
+      // Cargar tiendas
+      const { data: storesData, error: storesError } = await supabase
         .from('stores')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: true });
 
-      if (error) {
-        console.error('Error loading stores:', error);
+      if (storesError) {
+        console.error('Error loading stores:', storesError);
         return;
       }
 
-      const stores = storesData?.map(transformSupabaseStoreToAppStore) || [];
+      if (!storesData || storesData.length === 0) {
+        dispatch({ type: 'SET_STORES', payload: [] });
+        return;
+      }
+
+      // Cargar categorías para todas las tiendas
+      const storeIds = storesData.map(store => store.id);
+      const { data: categoriesData } = await supabase
+        .from('categories')
+        .select('*')
+        .in('store_id', storeIds)
+        .order('created_at', { ascending: true });
+
+      // Cargar productos para todas las tiendas
+      const { data: productsData } = await supabase
+        .from('products')
+        .select('*')
+        .in('store_id', storeIds)
+        .order('created_at', { ascending: true });
+
+      // Organizar datos por tienda
+      const stores = storesData.map(storeData => {
+        const storeCategories = (categoriesData || [])
+          .filter(cat => cat.store_id === storeData.id)
+          .map(transformSupabaseCategoryToAppCategory);
+        
+        const storeProducts = (productsData || [])
+          .filter(prod => prod.store_id === storeData.id)
+          .map(transformSupabaseProductToAppProduct);
+
+        return transformSupabaseStoreToAppStore(storeData, storeCategories, storeProducts);
+      });
+
       dispatch({ type: 'SET_STORES', payload: stores });
 
       // Set first store as current if exists
@@ -534,8 +917,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       register, 
       createStore,
       updateStore,
+      createCategory,
+      updateCategory,
+      deleteCategory,
+      createProduct,
+      updateProduct,
+      deleteProduct,
       canCreateStore,
-      getMaxStores
+      getMaxStores,
+      getMaxProducts,
+      getMaxCategories
     }}>
       {children}
     </StoreContext.Provider>

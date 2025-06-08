@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { ArrowLeft, Upload, X, Star, AlertCircle } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useToast } from '../../contexts/ToastContext';
-import { generateId } from '../../utils/constants';
 
 interface ProductFormProps {
   product?: any;
@@ -22,18 +21,20 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
     isFeatured: product?.isFeatured ?? false,
   });
 
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<any>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const fileInputRef = useRef(null);
-  const galleryInputRef = useRef(null);
-  const { state, dispatch } = useStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
+  const { state, createProduct, updateProduct } = useStore();
   const { success, error } = useToast();
 
   const store = state.currentStore;
   const categories = store?.categories || [];
 
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -41,12 +42,12 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
     
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev: any) => ({ ...prev, [name]: '' }));
     }
   };
 
-  const handleImageUpload = (e, type = 'main') => {
-    const file = e.target.files[0];
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, type = 'main') => {
+    const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         error('Error de archivo', 'La imagen debe ser menor a 5MB');
@@ -61,7 +62,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
       const reader = new FileReader();
       reader.onload = (e) => {
         if (type === 'main') {
-          setFormData(prev => ({ ...prev, mainImage: e.target.result }));
+          setFormData(prev => ({ ...prev, mainImage: e.target?.result as string }));
         } else {
           if (formData.gallery.length >= 5) {
             error('Límite alcanzado', 'Máximo 5 imágenes en la galería');
@@ -69,7 +70,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
           }
           setFormData(prev => ({
             ...prev,
-            gallery: [...prev.gallery, e.target.result]
+            gallery: [...prev.gallery, e.target?.result as string]
           }));
         }
       };
@@ -77,7 +78,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
     }
   };
 
-  const removeGalleryImage = (index) => {
+  const removeGalleryImage = (index: number) => {
     setFormData(prev => ({
       ...prev,
       gallery: prev.gallery.filter((_, i) => i !== index)
@@ -85,7 +86,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
   };
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors: any = {};
     
     if (!formData.name.trim()) {
       newErrors.name = 'El nombre es requerido';
@@ -93,7 +94,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
       newErrors.name = 'El nombre debe tener al menos 2 caracteres';
     }
     
-    if (!formData.price || formData.price <= 0) {
+    if (!formData.price || parseFloat(formData.price) <= 0) {
       newErrors.price = 'El precio debe ser mayor a 0';
     } else if (isNaN(parseFloat(formData.price))) {
       newErrors.price = 'El precio debe ser un número válido';
@@ -111,7 +112,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateForm()) return;
@@ -120,25 +121,32 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
 
     try {
       const productData = {
-        id: product?.id || generateId(),
-        ...formData,
+        name: formData.name.trim(),
+        shortDescription: formData.shortDescription.trim() || undefined,
+        longDescription: formData.longDescription.trim() || undefined,
         price: parseFloat(formData.price),
-        createdAt: product?.createdAt || new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        categoryId: formData.categoryId || undefined,
+        mainImage: formData.mainImage || undefined,
+        gallery: formData.gallery,
+        isActive: formData.isActive,
+        isFeatured: formData.isFeatured,
       };
 
       if (product) {
-        dispatch({ type: 'UPDATE_PRODUCT', payload: productData });
+        await updateProduct({
+          ...product,
+          ...productData,
+        });
         success('¡Producto actualizado!', 'Los cambios se han guardado correctamente');
       } else {
-        dispatch({ type: 'ADD_PRODUCT', payload: productData });
+        await createProduct(productData);
         success('¡Producto creado!', 'El nuevo producto se ha añadido al catálogo');
       }
 
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving product:', err);
-      error('Error al guardar', 'No se pudo guardar el producto. Intenta de nuevo.');
+      error('Error al guardar', err.message || 'No se pudo guardar el producto. Intenta de nuevo.');
     } finally {
       setIsSubmitting(false);
     }
@@ -150,19 +158,19 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
         <div className="flex items-center gap-4">
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 admin-dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Nuevo Producto</h1>
+          <h1 className="text-2xl font-bold text-gray-900 admin-dark:text-white">Nuevo Producto</h1>
         </div>
 
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
+        <div className="bg-yellow-50 admin-dark:bg-yellow-900/20 border border-yellow-200 admin-dark:border-yellow-700 rounded-xl p-6">
           <div className="flex items-center gap-3 mb-4">
-            <AlertCircle className="w-6 h-6 text-yellow-600" />
-            <h2 className="text-lg font-semibold text-yellow-800">Necesitas crear categorías primero</h2>
+            <AlertCircle className="w-6 h-6 text-yellow-600 admin-dark:text-yellow-400" />
+            <h2 className="text-lg font-semibold text-yellow-800 admin-dark:text-yellow-200">Necesitas crear categorías primero</h2>
           </div>
-          <p className="text-yellow-700 mb-4">
+          <p className="text-yellow-700 admin-dark:text-yellow-300 mb-4">
             Para añadir productos, primero debes crear al menos una categoría.
           </p>
           <button
@@ -182,15 +190,15 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
       <div className="flex items-center gap-4">
         <button
           onClick={onClose}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 hover:bg-gray-100 admin-dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 admin-dark:text-white">
             {product ? 'Editar Producto' : 'Nuevo Producto'}
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 admin-dark:text-gray-300 mt-1">
             {product ? 'Modifica la información del producto' : 'Añade un nuevo producto a tu catálogo'}
           </p>
         </div>
@@ -201,12 +209,12 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Left Column - Basic Info */}
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Información Básica</h2>
+            <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Información Básica</h2>
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
                     Nombre del producto *
                   </label>
                   <input
@@ -214,7 +222,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
                       errors.name ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="Ej: iPhone 15 Pro Max"
@@ -224,7 +232,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
                     Descripción corta (opcional)
                   </label>
                   <input
@@ -233,21 +241,21 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                     value={formData.shortDescription}
                     onChange={handleInputChange}
                     maxLength={100}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
                       errors.shortDescription ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="Breve descripción para el catálogo"
                   />
                   <div className="flex justify-between items-center mt-1">
                     {errors.shortDescription && <p className="text-red-500 text-sm">{errors.shortDescription}</p>}
-                    <p className="text-xs text-gray-500 ml-auto">
+                    <p className="text-xs text-gray-500 admin-dark:text-gray-400 ml-auto">
                       {formData.shortDescription.length}/100 caracteres
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
                     Descripción larga (opcional)
                   </label>
                   <textarea
@@ -256,17 +264,17 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                     onChange={handleInputChange}
                     rows={4}
                     maxLength={500}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 admin-dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:text-white admin-dark:placeholder-gray-400"
                     placeholder="Descripción detallada que aparecerá en el popup del producto"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 admin-dark:text-gray-400 mt-1">
                     {formData.longDescription.length}/500 caracteres
                   </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
                       Precio *
                     </label>
                     <input
@@ -276,7 +284,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                       onChange={handleInputChange}
                       min="0"
                       step="0.01"
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
                         errors.price ? 'border-red-300' : 'border-gray-300'
                       }`}
                       placeholder="0.00"
@@ -285,14 +293,14 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
                       Categoría *
                     </label>
                     <select
                       name="categoryId"
                       value={formData.categoryId}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent ${
+                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white ${
                         errors.categoryId ? 'border-red-300' : 'border-gray-300'
                       }`}
                     >
@@ -310,14 +318,14 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
             </div>
 
             {/* Settings */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Configuración</h2>
+            <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Configuración</h2>
               
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Estado</label>
-                    <p className="text-xs text-gray-500">Mostrar producto en el catálogo</p>
+                    <label className="text-sm font-medium text-gray-700 admin-dark:text-gray-300">Estado</label>
+                    <p className="text-xs text-gray-500 admin-dark:text-gray-400">Mostrar producto en el catálogo</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -327,14 +335,14 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                       onChange={handleInputChange}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                    <div className="w-11 h-6 bg-gray-200 admin-dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                   </label>
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-sm font-medium text-gray-700">Producto Destacado</label>
-                    <p className="text-xs text-gray-500">Mostrar con una insignia especial</p>
+                    <label className="text-sm font-medium text-gray-700 admin-dark:text-gray-300">Producto Destacado</label>
+                    <p className="text-xs text-gray-500 admin-dark:text-gray-400">Mostrar con una insignia especial</p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
@@ -344,7 +352,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                       onChange={handleInputChange}
                       className="sr-only peer"
                     />
-                    <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-focus:ring-2 peer-focus:ring-yellow-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                    <div className="w-11 h-6 bg-gray-200 admin-dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-yellow-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
                   </label>
                 </div>
               </div>
@@ -354,8 +362,8 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
           {/* Right Column - Images */}
           <div className="space-y-6">
             {/* Main Image */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Imagen Principal</h2>
+            <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Imagen Principal</h2>
               
               <div className="space-y-4">
                 {formData.mainImage ? (
@@ -376,11 +384,11 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                 ) : (
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
+                    className="border-2 border-dashed border-gray-300 admin-dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 admin-dark:hover:bg-indigo-900/20 transition-colors"
                   >
                     <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 font-medium mb-2">Clic para subir imagen</p>
-                    <p className="text-sm text-gray-500">JPG, PNG o WEBP (máx. 5MB)</p>
+                    <p className="text-gray-600 admin-dark:text-gray-300 font-medium mb-2">Clic para subir imagen</p>
+                    <p className="text-sm text-gray-500 admin-dark:text-gray-400">JPG, PNG o WEBP (máx. 5MB)</p>
                   </div>
                 )}
                 
@@ -395,10 +403,10 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
             </div>
 
             {/* Gallery */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-6">
+              <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">
                 Galería Adicional
-                <span className="text-sm font-normal text-gray-500 ml-2">(Hasta 5 imágenes)</span>
+                <span className="text-sm font-normal text-gray-500 admin-dark:text-gray-400 ml-2">(Hasta 5 imágenes)</span>
               </h2>
               
               <div className="space-y-4">
@@ -423,7 +431,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                   {formData.gallery.length < 5 && (
                     <div
                       onClick={() => galleryInputRef.current?.click()}
-                      className="border-2 border-dashed border-gray-300 rounded-lg h-24 flex items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition-colors"
+                      className="border-2 border-dashed border-gray-300 admin-dark:border-gray-600 rounded-lg h-24 flex items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 admin-dark:hover:bg-indigo-900/20 transition-colors"
                     >
                       <Upload className="w-6 h-6 text-gray-400" />
                     </div>
@@ -443,12 +451,12 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center justify-end gap-4 pt-6 border-t border-gray-200">
+        <div className="flex items-center justify-end gap-4 pt-6 border-t border-gray-200 admin-dark:border-gray-700">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium transition-colors disabled:opacity-50"
+            className="px-6 py-3 border border-gray-300 admin-dark:border-gray-600 text-gray-700 admin-dark:text-gray-300 rounded-lg hover:bg-gray-50 admin-dark:hover:bg-gray-700 font-medium transition-colors disabled:opacity-50"
           >
             Cancelar
           </button>
