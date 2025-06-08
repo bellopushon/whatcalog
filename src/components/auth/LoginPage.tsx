@@ -20,7 +20,7 @@ interface FormErrors {
 }
 
 export default function LoginPage() {
-  const { signIn, signUp, resetPassword, isLoading, error: authError, clearError } = useAuth();
+const { signIn, signUp, resetPassword, clearError } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
   
   const [mode, setMode] = useState<FormMode>('login');
