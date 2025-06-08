@@ -54,13 +54,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   
   // Show loading while initializing
   if (!state.isInitialized) {
+    console.log('Still initializing, showing loading screen');
     return <LoadingScreen />;
   }
   
   // If not authenticated, redirect to login
   if (!state.isAuthenticated) {
     console.log('User not authenticated, redirecting to login');
-    return <Navigate to="/login\" replace />;
+    return <Navigate to="/login" replace />;
   }
   
   console.log('User is authenticated, rendering protected content');
@@ -113,6 +114,7 @@ function AppRoutes() {
   
   // Show loading screen while initializing
   if (!state.isInitialized) {
+    console.log('App not initialized, showing loading screen');
     return <LoadingScreen />;
   }
   
@@ -123,7 +125,7 @@ function AppRoutes() {
         path="/login" 
         element={
           state.isAuthenticated ? (
-            <Navigate to="/admin\" replace />
+            <Navigate to="/admin" replace />
           ) : (
             <LoginPage />
           )
@@ -168,7 +170,7 @@ function AppRoutes() {
         path="/" 
         element={
           state.isAuthenticated ? (
-            <Navigate to="/admin\" replace />
+            <Navigate to="/admin" replace />
           ) : (
             <Navigate to="/login" replace />
           )

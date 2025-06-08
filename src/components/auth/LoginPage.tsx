@@ -88,12 +88,12 @@ export default function LoginPage() {
   };
 
   // Show loading state while authenticating or not initialized
-  if (!state.isInitialized || (state.isLoading && state.isAuthenticated)) {
+  if (!state.isInitialized) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-pink-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando...</p>
+          <p className="text-gray-600">Inicializando...</p>
         </div>
       </div>
     );

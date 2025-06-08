@@ -117,7 +117,7 @@ type Action =
   | { type: 'DELETE_CATEGORY'; payload: string }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_INITIALIZED'; payload: boolean }
-  | { type: 'SET_AUTH_STATE'; payload: { isAuthenticated: boolean; user: User | null } }
+  | { type: 'SET_AUTH_STATE'; payload: { isAuthenticated: boolean; user: User | null; isInitialized?: boolean } }
   | { type: 'LOGOUT' };
 
 const initialState: AppState = {
@@ -136,14 +136,16 @@ function storeReducer(state: AppState, action: Action): AppState {
         ...state, 
         user: action.payload, 
         isAuthenticated: true, 
-        isLoading: false 
+        isLoading: false,
+        isInitialized: true
       };
     case 'SET_AUTH_STATE':
       return {
         ...state,
         isAuthenticated: action.payload.isAuthenticated,
         user: action.payload.user,
-        isLoading: false
+        isLoading: false,
+        isInitialized: action.payload.isInitialized ?? true
       };
     case 'SET_STORES':
       return { ...state, stores: action.payload };
@@ -475,7 +477,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         type: 'SET_AUTH_STATE', 
         payload: { 
           isAuthenticated: true, 
-          user: appUser 
+          user: appUser,
+          isInitialized: true
         } 
       });
       
@@ -489,7 +492,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         type: 'SET_AUTH_STATE', 
         payload: { 
           isAuthenticated: false, 
-          user: null 
+          user: null,
+          isInitialized: true
         } 
       });
     }
@@ -498,6 +502,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // Initialize auth
   useEffect(() => {
     let mounted = true;
+    let authInitialized = false;
 
     const initAuth = async () => {
       try {
@@ -508,31 +513,31 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         
         if (error) {
           console.error('Session error:', error);
-          if (mounted) {
-            dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null } });
-            dispatch({ type: 'SET_INITIALIZED', payload: true });
+          if (mounted && !authInitialized) {
+            dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null, isInitialized: true } });
+            authInitialized = true;
           }
           return;
         }
 
         if (session?.user) {
           console.log('Found existing session for user:', session.user.email);
-          await processAuthenticatedUser(session.user);
+          if (mounted && !authInitialized) {
+            await processAuthenticatedUser(session.user);
+            authInitialized = true;
+          }
         } else {
           console.log('No existing session found');
-          if (mounted) {
-            dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null } });
+          if (mounted && !authInitialized) {
+            dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null, isInitialized: true } });
+            authInitialized = true;
           }
-        }
-        
-        if (mounted) {
-          dispatch({ type: 'SET_INITIALIZED', payload: true });
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
-        if (mounted) {
-          dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null } });
-          dispatch({ type: 'SET_INITIALIZED', payload: true });
+        if (mounted && !authInitialized) {
+          dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null, isInitialized: true } });
+          authInitialized = true;
         }
       }
     };
@@ -558,6 +563,16 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           // Don't re-process user data on token refresh if already authenticated
           if (!state.isAuthenticated) {
             await processAuthenticatedUser(session.user);
+          }
+        } else if (event === 'INITIAL_SESSION') {
+          // Handle initial session - this is called after getSession()
+          if (session?.user && !state.isAuthenticated && !authInitialized) {
+            console.log('Processing initial session for:', session.user.email);
+            await processAuthenticatedUser(session.user);
+            authInitialized = true;
+          } else if (!session && !authInitialized) {
+            dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null, isInitialized: true } });
+            authInitialized = true;
           }
         }
       }
