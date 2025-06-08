@@ -95,13 +95,17 @@ useEffect(() => {
     try {
       switch (mode) {
         case 'login': {
-          const result = await signIn(formData.email, formData.password);
-          if (!result.success) {
-            setErrors({ general: result.error });
-          } else {
-            showSuccess('¡Bienvenido!', 'Iniciando sesión...');
-          }
-          break;
+  const result = await signIn(formData.email, formData.password);
+  if (!result.success) {
+    setErrors({ general: result.error });
+  } else {
+    showSuccess('¡Bienvenido!', 'Iniciando sesión...');
+    // Force redirect
+    setTimeout(() => {
+      window.location.href = '/admin';
+    }, 500);
+  }
+  break;
         }
 
         case 'register': {
