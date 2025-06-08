@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Palette, Smartphone, Save } from 'lucide-react';
+import { Palette, Smartphone, Save, Monitor } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useTheme, COLOR_PALETTES } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -196,12 +196,21 @@ export default function ThemeCustomizer() {
         </div>
       </div>
 
-      {/* Additional Configurations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-        {/* Border Radius */}
-        <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
-          <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Radio del Borde</h2>
-          
+      {/* Border Radius Configuration */}
+      <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
+        <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Radio del Borde</h2>
+        
+        <div className="space-y-6">
+          {/* Explanation */}
+          <div className="bg-blue-50 admin-dark:bg-blue-900/20 border border-blue-200 admin-dark:border-blue-700 rounded-lg p-4">
+            <h3 className="font-medium text-blue-900 admin-dark:text-blue-200 mb-2">¿Qué es el Radio del Borde?</h3>
+            <p className="text-sm text-blue-800 admin-dark:text-blue-300">
+              Controla qué tan redondeadas serán las esquinas de las tarjetas de productos, botones y otros elementos en tu catálogo. 
+              Un valor bajo (0px) crea esquinas cuadradas, mientras que un valor alto (20px) crea esquinas muy suaves y modernas.
+            </p>
+          </div>
+
+          {/* Slider Control */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-600 admin-dark:text-gray-300">Redondeado</span>
@@ -218,44 +227,118 @@ export default function ThemeCustomizer() {
             />
             
             <div className="flex justify-between text-xs text-gray-500 admin-dark:text-gray-400">
-              <span>0px</span>
-              <span>10px</span>
-              <span>20px</span>
+              <span>0px (Cuadrado)</span>
+              <span>10px (Moderado)</span>
+              <span>20px (Muy redondeado)</span>
+            </div>
+          </div>
+
+          {/* Live Preview */}
+          <div className="space-y-4">
+            <h3 className="font-medium text-gray-900 admin-dark:text-white">Vista Previa en Tiempo Real</h3>
+            
+            {/* Product Card Preview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Product Card Example */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">Tarjeta de Producto</h4>
+                <div 
+                  className="bg-white admin-dark:bg-gray-700 border border-gray-200 admin-dark:border-gray-600 overflow-hidden shadow-sm"
+                  style={{ borderRadius: `${selectedRadius}px` }}
+                >
+                  <div className="aspect-square bg-gray-100 admin-dark:bg-gray-600 flex items-center justify-center">
+                    <span className="text-gray-400 text-xs">Imagen</span>
+                  </div>
+                  <div className="p-3">
+                    <h5 className="font-medium text-gray-900 admin-dark:text-white text-sm">Producto Ejemplo</h5>
+                    <p className="text-gray-600 admin-dark:text-gray-300 text-xs">$29.99</p>
+                    <button 
+                      className="mt-2 text-white text-xs px-3 py-1 font-medium"
+                      style={{ 
+                        backgroundColor: currentPaletteData.primary,
+                        borderRadius: `${Math.max(selectedRadius - 2, 0)}px`
+                      }}
+                    >
+                      Agregar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Button Examples */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">Botones y Elementos</h4>
+                <div className="space-y-3">
+                  {/* Primary Button */}
+                  <button 
+                    className="w-full text-white py-2 px-4 text-sm font-medium"
+                    style={{ 
+                      backgroundColor: currentPaletteData.primary,
+                      borderRadius: `${selectedRadius}px`
+                    }}
+                  >
+                    Botón Primario
+                  </button>
+                  
+                  {/* Secondary Button */}
+                  <button 
+                    className="w-full border-2 py-2 px-4 text-sm font-medium"
+                    style={{ 
+                      borderColor: currentPaletteData.primary,
+                      color: currentPaletteData.primary,
+                      borderRadius: `${selectedRadius}px`
+                    }}
+                  >
+                    Botón Secundario
+                  </button>
+                  
+                  {/* Input Field */}
+                  <input 
+                    type="text" 
+                    placeholder="Campo de texto"
+                    className="w-full border border-gray-300 admin-dark:border-gray-600 px-3 py-2 text-sm admin-dark:bg-gray-700 admin-dark:text-white"
+                    style={{ borderRadius: `${selectedRadius}px` }}
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Preview */}
-            <div className="mt-4">
-              <div 
-                className="w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-500 border-2 border-gray-200 admin-dark:border-gray-600"
-                style={{ borderRadius: `${selectedRadius}px` }}
-              ></div>
+            {/* Style Description */}
+            <div className="bg-gray-50 admin-dark:bg-gray-700 p-3 rounded-lg">
+              <p className="text-sm text-gray-600 admin-dark:text-gray-300">
+                <strong>Estilo actual:</strong> {' '}
+                {selectedRadius === 0 && "Esquinas completamente cuadradas - Estilo moderno y minimalista"}
+                {selectedRadius > 0 && selectedRadius <= 5 && "Esquinas ligeramente redondeadas - Estilo profesional"}
+                {selectedRadius > 5 && selectedRadius <= 12 && "Esquinas moderadamente redondeadas - Estilo amigable y moderno"}
+                {selectedRadius > 12 && "Esquinas muy redondeadas - Estilo suave y orgánico"}
+              </p>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Products Per Page */}
-        <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <Smartphone className="w-6 h-6 text-green-600" />
-            <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white">Productos por Página</h2>
-          </div>
+      {/* Products Per Page */}
+      <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <Smartphone className="w-6 h-6 text-green-600" />
+          <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white">Productos por Página</h2>
+        </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <select
-              value={productsPerPage}
-              onChange={(e) => handleProductsPerPageChange(parseInt(e.target.value))}
-              className="px-4 py-2 border border-gray-300 admin-dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm lg:text-base admin-dark:bg-gray-700 admin-dark:text-white"
-            >
-              {PRODUCTS_PER_PAGE_OPTIONS.map(count => (
-                <option key={count} value={count}>
-                  {count} Productos
-                </option>
-              ))}
-            </select>
-            <span className="text-sm text-gray-600 admin-dark:text-gray-300">
-              Los clientes verán {productsPerPage} productos por página en tu catálogo
-            </span>
-          </div>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <select
+            value={productsPerPage}
+            onChange={(e) => handleProductsPerPageChange(parseInt(e.target.value))}
+            className="px-4 py-2 border border-gray-300 admin-dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm lg:text-base admin-dark:bg-gray-700 admin-dark:text-white"
+          >
+            {PRODUCTS_PER_PAGE_OPTIONS.map(count => (
+              <option key={count} value={count}>
+                {count} Productos
+              </option>
+            ))}
+          </select>
+          <span className="text-sm text-gray-600 admin-dark:text-gray-300">
+            Los clientes verán {productsPerPage} productos por página en tu catálogo
+          </span>
         </div>
       </div>
 
@@ -273,7 +356,7 @@ export default function ThemeCustomizer() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
             >
-              <Palette className="w-5 h-5" />
+              <Monitor className="w-5 h-5" />
               Ver Catálogo
             </a>
           </div>
