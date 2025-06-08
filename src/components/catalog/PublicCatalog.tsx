@@ -31,14 +31,21 @@ export default function PublicCatalog() {
       setHasTrackedVisit(true);
 
       // Apply store theme to the public catalog
-      const paletteId = store.theme?.colorPalette || 'predeterminado';
-      const borderRadius = store.theme?.borderRadius || 8;
+      const paletteId = store.colorPalette || 'predeterminado';
+      const borderRadius = store.borderRadius || 8;
       
       // Find the palette data
       const palette = COLOR_PALETTES.find(p => p.id === paletteId) || COLOR_PALETTES[0];
       
-      // Apply CSS variables for the theme
+      console.log('🎨 Applying catalog theme:', { paletteId, palette, borderRadius });
+      
+      // Apply CSS variables for the theme - CRITICAL FIX
       const root = document.documentElement;
+      root.style.setProperty('--catalog-primary', palette.primary);
+      root.style.setProperty('--catalog-secondary', palette.secondary);
+      root.style.setProperty('--catalog-border-radius', `${borderRadius}px`);
+      
+      // Also apply the standard variables for compatibility
       root.style.setProperty('--color-primary', palette.primary);
       root.style.setProperty('--color-secondary', palette.secondary);
       root.style.setProperty('--border-radius', `${borderRadius}px`);
@@ -54,6 +61,9 @@ export default function PublicCatalog() {
     return () => {
       // Reset to default theme
       const root = document.documentElement;
+      root.style.setProperty('--catalog-primary', '#6366f1');
+      root.style.setProperty('--catalog-secondary', '#ec4899');
+      root.style.setProperty('--catalog-border-radius', '8px');
       root.style.setProperty('--color-primary', '#6366f1');
       root.style.setProperty('--color-secondary', '#ec4899');
       root.style.setProperty('--border-radius', '8px');
@@ -134,7 +144,7 @@ export default function PublicCatalog() {
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   // Get current theme colors for dynamic styling
-  const currentPalette = COLOR_PALETTES.find(p => p.id === (store.theme?.colorPalette || 'predeterminado')) || COLOR_PALETTES[0];
+  const currentPalette = COLOR_PALETTES.find(p => p.id === (store.colorPalette || 'predeterminado')) || COLOR_PALETTES[0];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -345,7 +355,10 @@ export default function PublicCatalog() {
                       <button
                         onClick={() => addToCart(product)}
                         className="text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors hover:opacity-90"
-                        style={{ backgroundColor: currentPalette.primary }}
+                        style={{ 
+                          backgroundColor: currentPalette.primary,
+                          borderRadius: `${store.borderRadius || 8}px`
+                        }}
                       >
                         +
                       </button>
@@ -362,11 +375,11 @@ export default function PublicCatalog() {
       <footer className="bg-white border-t border-gray-200 mt-12">
         <div className="max-w-4xl mx-auto px-4 py-6">
           {/* Social Media */}
-          {store.socialMedia?.showInCatalog && (
+          {store.showSocialInCatalog && (
             <div className="flex justify-center gap-4 mb-4">
-              {store.socialMedia.facebook && (
+              {store.facebookUrl && (
                 <a
-                  href={store.socialMedia.facebook}
+                  href={store.facebookUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 text-gray-600 hover:text-blue-600 transition-colors"
@@ -375,9 +388,9 @@ export default function PublicCatalog() {
                   <Facebook className="w-5 h-5" />
                 </a>
               )}
-              {store.socialMedia.instagram && (
+              {store.instagramUrl && (
                 <a
-                  href={store.socialMedia.instagram}
+                  href={store.instagramUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 text-gray-600 hover:text-pink-600 transition-colors"
@@ -386,9 +399,9 @@ export default function PublicCatalog() {
                   <Instagram className="w-5 h-5" />
                 </a>
               )}
-              {store.socialMedia.twitter && (
+              {store.twitterUrl && (
                 <a
-                  href={store.socialMedia.twitter}
+                  href={store.twitterUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2 text-gray-600 hover:text-blue-400 transition-colors"
