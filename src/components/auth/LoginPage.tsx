@@ -35,11 +35,12 @@ export default function LoginPage() {
   const [successMessage, setSuccessMessage] = useState('');
 
   // Limpiar errores cuando cambia el modo
-  useEffect(() => {
-    setErrors({});
-    setSuccessMessage('');
-    clearError();
-  }, [mode, clearError]);
+// Limpiar errores cuando cambia el modo
+useEffect(() => {
+  setErrors({});
+  setSuccessMessage('');
+  if (clearError) clearError();
+}, [mode]);
 
   // Validación del formulario
   const validateForm = (): boolean => {
