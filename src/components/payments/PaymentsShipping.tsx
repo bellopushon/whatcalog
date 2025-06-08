@@ -1,67 +1,138 @@
 import React, { useState } from 'react';
-import { CreditCard, Truck, Store, DollarSign } from 'lucide-react';
+import { CreditCard, Truck, Store, DollarSign, Save } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useToast } from '../../contexts/ToastContext';
 
 export default function PaymentsShipping() {
-  const { state, dispatch } = useStore();
-  const { success } = useToast();
+  const { state, updateStore } = useStore();
+  const { success, error } = useToast();
   const store = state.currentStore;
 
   const [paymentMethods, setPaymentMethods] = useState({
-    cash: store?.paymentMethods?.cash ?? true,
-    bankTransfer: store?.paymentMethods?.bankTransfer ?? false,
-    bankDetails: store?.paymentMethods?.bankDetails || '',
+    cash: store?.acceptCash ?? true,
+    bankTransfer: store?.acceptBankTransfer ?? false,
+    bankDetails: store?.bankDetails || '',
   });
 
   const [shippingMethods, setShippingMethods] = useState({
-    pickup: store?.shippingMethods?.pickup ?? true,
-    delivery: store?.shippingMethods?.delivery ?? false,
-    deliveryCost: store?.shippingMethods?.deliveryCost || 0,
-    deliveryZone: store?.shippingMethods?.deliveryZone || '',
+    pickup: store?.allowPickup ?? true,
+    delivery: store?.allowDelivery ?? false,
+    deliveryCost: store?.deliveryCost || 0,
+    deliveryZone: store?.deliveryZone || '',
   });
 
-  const handlePaymentChange = (field: string, value: any) => {
-    const updatedMethods = { ...paymentMethods, [field]: value };
-    setPaymentMethods(updatedMethods);
-    
-    dispatch({
-      type: 'UPDATE_STORE',
-      payload: {
-        paymentMethods: updatedMethods
-      }
-    });
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
-    // Show success notification for immediate feedback
-    success('¡Configuración actualizada!', 'Los cambios se han guardado automáticamente');
+  const handlePaymentChange = (field: string, value: any) => {
+    setPaymentMethods(prev => ({ ...prev, [field]: value }));
+    setHasUnsavedChanges(true);
   };
 
   const handleShippingChange = (field: string, value: any) => {
-    const updatedMethods = { ...shippingMethods, [field]: value };
-    setShippingMethods(updatedMethods);
-    
-    dispatch({
-      type: 'UPDATE_STORE',
-      payload: {
-        shippingMethods: updatedMethods
-      }
-    });
-
-    // Show success notification for immediate feedback
-    success('¡Configuración actualizada!', 'Los cambios se han guardado automáticamente');
+    setShippingMethods(prev => ({ ...prev, [field]: value }));
+    setHasUnsavedChanges(true);
   };
 
+  const handleSaveChanges = async () => {
+    if (!store) return;
+
+    setIsSaving(true);
+
+    try {
+      // Preparar datos para actualizar
+      const updateData = {
+        acceptCash: paymentMethods.cash,
+        acceptBankTransfer: paymentMethods.bankTransfer,
+        bankDetails: paymentMethods.bankDetails.trim() || undefined,
+        allowPickup: shippingMethods.pickup,
+        allowDelivery: shippingMethods.delivery,
+        deliveryCost: shippingMethods.deliveryCost,
+        deliveryZone: shippingMethods.deliveryZone.trim() || undefined,
+      };
+
+      // Actualizar tienda en Supabase
+      await updateStore(updateData);
+
+      setHasUnsavedChanges(false);
+      success('¡Configuración guardada!', 'Los cambios de pagos y envíos se han aplicado correctamente');
+    } catch (err: any) {
+      console.error('Error saving payment/shipping settings:', err);
+      error('Error al guardar', err.message || 'No se pudieron guardar los cambios. Intenta de nuevo.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Show message if no store is available
+  if (!store) {
+    return (
+      <div className="space-y-4 lg:space-y-6">
+        <div>
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-900 admin-dark:text-white">Pagos y Envíos</h1>
+          <p className="text-gray-600 admin-dark:text-gray-300 text-sm lg:text-base mt-1">Configure los métodos de pago y entrega</p>
+        </div>
+        <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-8 lg:p-12 text-center">
+          <div className="w-16 h-16 bg-gray-100 admin-dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CreditCard className="w-8 h-8 text-gray-400" />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 admin-dark:text-white mb-2">No hay tienda configurada</h3>
+          <p className="text-gray-600 admin-dark:text-gray-300 text-sm lg:text-base">Primero debes configurar tu tienda</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 lg:space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 admin-dark:text-white">Pagos y Envíos</h1>
-        <p className="text-gray-600 admin-dark:text-gray-300 mt-1">Configure los métodos de pago y entrega</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl lg:text-2xl font-bold text-gray-900 admin-dark:text-white">Pagos y Envíos</h1>
+          <p className="text-gray-600 admin-dark:text-gray-300 text-sm lg:text-base mt-1">Configure los métodos de pago y entrega</p>
+        </div>
+        
+        {/* Save Button - Always Visible */}
+        <button
+          onClick={handleSaveChanges}
+          disabled={isSaving || !hasUnsavedChanges}
+          className={`flex items-center gap-2 px-4 lg:px-6 py-2 lg:py-3 rounded-lg font-medium transition-all ${
+            hasUnsavedChanges
+              ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg'
+              : 'bg-gray-100 admin-dark:bg-gray-700 text-gray-400 admin-dark:text-gray-500 cursor-not-allowed'
+          }`}
+        >
+          {isSaving ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              <span className="hidden sm:inline">Guardando...</span>
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4" />
+              <span className="hidden sm:inline">
+                {hasUnsavedChanges ? 'Guardar Cambios' : 'Sin Cambios'}
+              </span>
+            </>
+          )}
+        </button>
       </div>
 
+      {/* Unsaved Changes Warning */}
+      {hasUnsavedChanges && (
+        <div className="bg-yellow-50 admin-dark:bg-yellow-900/20 border border-yellow-200 admin-dark:border-yellow-700 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+            <p className="text-yellow-800 admin-dark:text-yellow-200 text-sm font-medium">
+              Tienes cambios sin guardar. Haz clic en "Guardar Cambios" para aplicarlos permanentemente.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Payment Methods */}
-      <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-6">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
+        <div className="flex items-center gap-3 mb-4 lg:mb-6">
           <CreditCard className="w-6 h-6 text-green-600" />
           <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white">Métodos de Pago</h2>
         </div>
@@ -131,8 +202,8 @@ export default function PaymentsShipping() {
       </div>
 
       {/* Shipping Methods */}
-      <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-6">
-        <div className="flex items-center gap-3 mb-6">
+      <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
+        <div className="flex items-center gap-3 mb-4 lg:mb-6">
           <Truck className="w-6 h-6 text-blue-600" />
           <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white">Métodos de Entrega</h2>
         </div>
@@ -219,14 +290,14 @@ export default function PaymentsShipping() {
         </div>
       </div>
 
-      {/* Summary - FIXED DARK MODE */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900 rounded-xl border border-blue-200 dark:border-blue-800 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Resumen de Configuración</h3>
+      {/* Summary */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 admin-dark:from-gray-800 admin-dark:to-gray-900 rounded-xl border border-blue-200 admin-dark:border-blue-800 p-4 lg:p-6">
+        <h3 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Resumen de Configuración</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <h4 className="font-medium text-gray-900 dark:text-white mb-2">Métodos de Pago Activos:</h4>
-            <ul className="space-y-1 text-sm text-gray-900 dark:text-gray-100">
+            <h4 className="font-medium text-gray-900 admin-dark:text-white mb-2">Métodos de Pago Activos:</h4>
+            <ul className="space-y-1 text-sm text-gray-900 admin-dark:text-gray-100">
               {paymentMethods.cash && <li>• Efectivo</li>}
               {paymentMethods.bankTransfer && <li>• Transferencia Bancaria</li>}
               {!paymentMethods.cash && !paymentMethods.bankTransfer && (
@@ -236,8 +307,8 @@ export default function PaymentsShipping() {
           </div>
 
           <div>
-            <h4 className="font-medium text-gray-900 dark:text-white mb-2">Métodos de Entrega Activos:</h4>
-            <ul className="space-y-1 text-sm text-gray-900 dark:text-gray-100">
+            <h4 className="font-medium text-gray-900 admin-dark:text-white mb-2">Métodos de Entrega Activos:</h4>
+            <ul className="space-y-1 text-sm text-gray-900 admin-dark:text-gray-100">
               {shippingMethods.pickup && <li>• Recogida en Tienda</li>}
               {shippingMethods.delivery && (
                 <li>• Delivery ({store?.currency === 'USD' ? '$' : store?.currency === 'EUR' ? '€' : '$'}{shippingMethods.deliveryCost})</li>
@@ -249,12 +320,35 @@ export default function PaymentsShipping() {
           </div>
         </div>
 
-        <div className="mt-4 p-3 bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-800 rounded-lg">
-          <p className="text-sm text-green-800 dark:text-green-200 font-medium">
-            ✅ Los cambios se guardan automáticamente cuando modificas cualquier configuración
+        <div className="mt-4 p-3 bg-blue-100 admin-dark:bg-blue-900/30 border border-blue-200 admin-dark:border-blue-700 rounded-lg">
+          <p className="text-sm text-blue-800 admin-dark:text-blue-200 font-medium">
+            💡 Los cambios se guardarán cuando hagas clic en "Guardar Cambios"
           </p>
         </div>
       </div>
+
+      {/* Save Button - Mobile Fixed */}
+      {hasUnsavedChanges && (
+        <div className="lg:hidden fixed bottom-20 left-4 right-4 z-40">
+          <button
+            onClick={handleSaveChanges}
+            disabled={isSaving}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white py-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 shadow-lg"
+          >
+            {isSaving ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Guardando Cambios...
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5" />
+                Guardar Cambios
+              </>
+            )}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
