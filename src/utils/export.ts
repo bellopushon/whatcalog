@@ -11,6 +11,13 @@ declare module 'jspdf' {
   }
 }
 
+// Función para truncar texto que exceda el límite de Excel
+const truncateText = (text: string | null | undefined, maxLength: number = 32767): string => {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength - 3) + '...';
+};
+
 // Función para obtener el nombre de la categoría
 const getCategoryName = (product: Product, categories: Category[]): string => {
   if (!product.categoryId) return 'Sin categoría';
@@ -129,16 +136,16 @@ export const exportToPDF = (products: Product[], categories: Category[], store: 
 export const exportToExcel = (products: Product[], categories: Category[], store: Store): void => {
   // Preparar datos para Excel
   const excelData = products.map(product => ({
-    'Nombre': product.name,
+    'Nombre': truncateText(product.name),
     'Categoría': getCategoryName(product, categories),
     'Precio': product.price,
     'Precio Formateado': formatCurrency(product.price, store.currency),
     'Estado': getProductStatus(product),
     'Activo': product.isActive ? 'Sí' : 'No',
     'Destacado': product.isFeatured ? 'Sí' : 'No',
-    'Descripción Corta': product.shortDescription || '',
-    'Descripción Larga': product.longDescription || '',
-    'Imagen Principal': product.mainImage || '',
+    'Descripción Corta': truncateText(product.shortDescription),
+    'Descripción Larga': truncateText(product.longDescription),
+    'Imagen Principal': truncateText(product.mainImage),
     'Fecha de Creación': new Date(product.createdAt).toLocaleDateString('es-ES'),
     'Última Actualización': new Date(product.updatedAt).toLocaleDateString('es-ES')
   }));
