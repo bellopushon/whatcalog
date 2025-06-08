@@ -879,17 +879,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // ✅ CRITICAL FIX: Garantizar que isInitialized siempre se establezca
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log('🔄 Starting authentication initialization...');
+      
       try {
         dispatch({ type: 'SET_LOADING', payload: true });
-        const { data: { user } } = await supabase.auth.getUser();
+        
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.warn('⚠️ Auth error during initialization:', error);
+          // No lanzar error, solo continuar sin usuario
+        }
+        
         if (user) {
-          const { data: userData } = await supabase
+          console.log('✅ User found during initialization:', user.email);
+          
+          const { data: userData, error: userError } = await supabase
             .from('users')
             .select('*')
             .eq('id', user.id)
             .single();
+
+          if (userError) {
+            console.warn('⚠️ Error loading user data:', userError);
+            // Continuar con datos básicos del usuario
+          }
 
           const appUser = transformSupabaseUserToAppUser(user, userData);
           dispatch({ type: 'SET_USER', payload: appUser });
@@ -897,10 +914,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
           // Cargar tiendas del usuario
           await loadUserStores(user.id);
+          
+          console.log('✅ User initialization completed');
+        } else {
+          console.log('ℹ️ No user found during initialization');
+          dispatch({ type: 'SET_AUTHENTICATED', payload: false });
         }
       } catch (error) {
-        console.error('Authentication initialization error:', error);
+        console.error('❌ Critical error during authentication initialization:', error);
+        // Asegurar que el estado se establezca incluso si hay errores
+        dispatch({ type: 'SET_AUTHENTICATED', payload: false });
       } finally {
+        // ✅ CRITICAL: SIEMPRE establecer isInitialized y isLoading
+        console.log('🏁 Authentication initialization finished');
         dispatch({ type: 'SET_LOADING', payload: false });
         dispatch({ type: 'SET_INITIALIZED', payload: true });
       }
