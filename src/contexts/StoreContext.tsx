@@ -1,4 +1,3 @@
-import { supabase } from '../lib/supabase';
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { supabase, type Tables, type TablesInsert, type TablesUpdate } from '../lib/supabase';
 import { MessageTemplate } from '../utils/whatsapp';
