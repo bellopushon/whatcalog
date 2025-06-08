@@ -152,7 +152,7 @@ export default function ProductList() {
           </div>
         </div>
         {!canCreateProduct && (
-          <div className="mt-3 p-3 bg-yellow-100 admin-dark:bg-yellow-900/30 border border-yellow-200 admin-dark:border-yellow-700 rounded-lg">
+          <div className="mt-3 p-3 bg-yellow-100 admin-dark:bg-yellow-900/50 border border-yellow-200 admin-dark:border-yellow-700 rounded-lg">
             <p className="text-sm text-yellow-800 admin-dark:text-yellow-200 font-medium">
               Has alcanzado el límite de productos para tu plan. Actualiza tu plan para crear más productos.
             </p>

@@ -320,8 +320,8 @@ export default function PaymentsShipping() {
           </div>
         </div>
 
-        <div className="mt-4 p-3 bg-blue-100 admin-dark:bg-blue-900/30 border border-blue-200 admin-dark:border-blue-700 rounded-lg">
-          <p className="text-sm text-blue-800 admin-dark:text-blue-200 font-medium">
+        <div className="mt-4 p-3 bg-blue-100 admin-dark:bg-blue-900/50 border border-blue-200 admin-dark:border-blue-700 rounded-lg">
+          <p className="text-sm text-blue-800 admin-dark:text-blue-100 font-medium">
             💡 Los cambios se guardarán cuando hagas clic en "Guardar Cambios"
           </p>
         </div>

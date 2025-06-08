@@ -254,6 +254,35 @@
   @apply text-purple-100 !important;
 }
 
+/* Fondos de color con mayor contraste para elementos informativos */
+.admin-dark .bg-blue-100 {
+  @apply bg-blue-900/50 !important;
+}
+
+.admin-dark .bg-green-100 {
+  @apply bg-green-900/50 !important;
+}
+
+.admin-dark .bg-yellow-100 {
+  @apply bg-yellow-900/50 !important;
+}
+
+.admin-dark .bg-red-100 {
+  @apply bg-red-900/50 !important;
+}
+
+.admin-dark .bg-indigo-100 {
+  @apply bg-indigo-900/50 !important;
+}
+
+.admin-dark .bg-purple-100 {
+  @apply bg-purple-900/50 !important;
+}
+
+.admin-dark .bg-orange-100 {
+  @apply bg-orange-900/50 !important;
+}
+
 /* Scrollbar personalizada */
 ::-webkit-scrollbar {
   width: 6px;
