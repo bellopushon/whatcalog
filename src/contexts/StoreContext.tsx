@@ -442,31 +442,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   // ✅ SOLUCIÓN CRÍTICA: Inicialización que NO bloquea el renderizado
-// Observar cambios en el usuario desde AuthContext
-useEffect(() => {
-  const loadInitialData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', user.id)
-          .single();
-          
-        const appUser = transformSupabaseUserToAppUser(user, userData);
-        dispatch({ type: 'SET_USER', payload: appUser });
-        
-        // Cargar tiendas
-        await loadUserDataInBackground(user.id);
-      }
-    } catch (error) {
-      console.error('Error loading data:', error);
-    }
-  };
-  
-  loadInitialData();
-}, []);
 
   // CRUD Operations for Stores
   const createStore = async (storeData: Partial<Store>) => {
