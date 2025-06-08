@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Crown, Check, CreditCard, Star, Shield, Zap, X, Store, Package, Palette, BarChart3, Instagram, Eye } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useToast } from '../../contexts/ToastContext';
+import { supabase } from '../../lib/supabase';
 import PaymentMethodForm from './PaymentMethodForm';
 import ActiveSubscription from './ActiveSubscription';
 
@@ -132,16 +133,45 @@ export default function SubscriptionPage() {
     
     try {
       // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Update user to selected plan
+      // Get current user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        throw new Error('No user found');
+      }
+      
+      // Calculate subscription end date (30 days from now)
+      const subscriptionEndDate = new Date();
+      subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 30);
+      
+      // Update user in database with new plan information
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          plan: selectedPlan as 'emprendedor' | 'profesional',
+          subscription_id: `sub_${Date.now()}`,
+          subscription_status: 'active',
+          subscription_start_date: new Date().toISOString(),
+          subscription_end_date: subscriptionEndDate.toISOString(),
+          payment_method: paymentData.method,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentUser.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+      
+      // Update local state
       const updatedUser = {
-        ...state.user,
+        ...state.user!,
         plan: selectedPlan as 'emprendedor' | 'profesional',
         subscriptionId: `sub_${Date.now()}`,
         subscriptionStatus: 'active',
         subscriptionStartDate: new Date().toISOString(),
-        subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days
+        subscriptionEndDate: subscriptionEndDate.toISOString(),
         paymentMethod: paymentData.method,
         updatedAt: new Date().toISOString(),
       };
@@ -161,9 +191,9 @@ export default function SubscriptionPage() {
         window.location.href = '/admin';
       }, 2000);
       
-    } catch (err) {
+    } catch (err: any) {
       console.error('Payment error:', err);
-      error('Error en el pago', 'No se pudo procesar el pago. Por favor intenta de nuevo.');
+      error('Error en el pago', err.message || 'No se pudo procesar el pago. Por favor intenta de nuevo.');
     } finally {
       setIsProcessing(false);
     }

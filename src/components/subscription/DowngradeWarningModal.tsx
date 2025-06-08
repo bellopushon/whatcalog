@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, AlertTriangle, Trash2, Store } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useToast } from '../../contexts/ToastContext';
+import { supabase } from '../../lib/supabase';
 
 interface DowngradeWarningModalProps {
   isOpen: boolean;
@@ -36,7 +37,25 @@ export default function DowngradeWarningModal({
     setIsDeleting(true);
 
     try {
-      // Remove the selected store
+      // Get current user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        throw new Error('No user found');
+      }
+      
+      // Delete the store from database
+      const { error: deleteError } = await supabase
+        .from('stores')
+        .delete()
+        .eq('id', selectedStoreToDelete)
+        .eq('user_id', currentUser.id);
+
+      if (deleteError) {
+        throw deleteError;
+      }
+      
+      // Remove the selected store from local state
       const updatedStores = state.stores.filter(store => store.id !== selectedStoreToDelete);
       dispatch({ type: 'SET_STORES', payload: updatedStores });
 
@@ -49,9 +68,9 @@ export default function DowngradeWarningModal({
       
       // Continue with the cancellation/downgrade
       onConfirm();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting store:', err);
-      error('Error al eliminar', 'No se pudo eliminar la tienda. Intenta de nuevo.');
+      error('Error al eliminar', err.message || 'No se pudo eliminar la tienda. Intenta de nuevo.');
     } finally {
       setIsDeleting(false);
     }

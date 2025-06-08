@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useTheme } from '../../contexts/ThemeContext';
+import { supabase } from '../../lib/supabase';
 import StoreSelector from './StoreSelector';
 
 interface UserDropdownProps {
@@ -38,9 +39,15 @@ export default function UserDropdown({ onEditProfile }: UserDropdownProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    dispatch({ type: 'LOGOUT' });
-    setIsOpen(false);
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      dispatch({ type: 'LOGOUT' });
+      setIsOpen(false);
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -189,16 +196,14 @@ export default function UserDropdown({ onEditProfile }: UserDropdownProps) {
                 </Link>
 
                 {/* Suscripciones - Nueva opción */}
-                {hasActiveSubscription && (
-                  <Link
-                    to="/subscription"
-                    onClick={() => setIsOpen(false)}
-                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 admin-dark:text-gray-300 hover:bg-gray-50 admin-dark:hover:bg-gray-800 hover:text-gray-900 admin-dark:hover:text-white transition-colors"
-                  >
-                    <CreditCard className="w-4 h-4" />
-                    Suscripciones
-                  </Link>
-                )}
+                <Link
+                  to="/subscription"
+                  onClick={() => setIsOpen(false)}
+                  className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 admin-dark:text-gray-300 hover:bg-gray-50 admin-dark:hover:bg-gray-800 hover:text-gray-900 admin-dark:hover:text-white transition-colors"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  Suscripciones
+                </Link>
 
                 {/* Theme Toggle - FIXED DARK MODE HOVER */}
                 <button

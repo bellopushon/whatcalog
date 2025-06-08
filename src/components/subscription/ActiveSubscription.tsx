@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { ArrowLeft, Crown, Calendar, CreditCard, Download, AlertTriangle, Check, X } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useToast } from '../../contexts/ToastContext';
-import { useTheme } from '../../contexts/ThemeContext'; // AÑADIR ESTA LÍNEA
+import { useTheme } from '../../contexts/ThemeContext';
+import { supabase } from '../../lib/supabase';
 import DowngradeWarningModal from './DowngradeWarningModal';
 
 export default function ActiveSubscription() {
   const { state, dispatch } = useStore();
   const { success, error } = useToast();
-  const { isDarkMode } = useTheme(); // AÑADIR ESTA LÍNEA
+  const { isDarkMode } = useTheme();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showDowngradeWarning, setShowDowngradeWarning] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -37,11 +38,30 @@ export default function ActiveSubscription() {
     setIsCanceling(true);
     
     try {
-      // Simulate cancellation process
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Get current user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
       
+      if (!currentUser) {
+        throw new Error('No user found');
+      }
+      
+      // Update user in database
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          subscription_status: 'canceled',
+          subscription_canceled_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentUser.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+      
+      // Update local state
       const updatedUser = {
-        ...user,
+        ...user!,
         subscriptionStatus: 'canceled',
         subscriptionCanceledAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -56,9 +76,9 @@ export default function ActiveSubscription() {
       
       setShowCancelModal(false);
       setShowDowngradeWarning(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Cancellation error:', err);
-      error('Error al cancelar', 'No se pudo cancelar la suscripción. Intenta de nuevo.');
+      error('Error al cancelar', err.message || 'No se pudo cancelar la suscripción. Intenta de nuevo.');
     } finally {
       setIsCanceling(false);
     }
@@ -66,8 +86,30 @@ export default function ActiveSubscription() {
 
   const handleReactivate = async () => {
     try {
+      // Get current user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        throw new Error('No user found');
+      }
+      
+      // Update user in database
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          subscription_status: 'active',
+          subscription_canceled_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentUser.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+      
+      // Update local state
       const updatedUser = {
-        ...user,
+        ...user!,
         subscriptionStatus: 'active',
         subscriptionCanceledAt: undefined,
         updatedAt: new Date().toISOString(),
@@ -79,8 +121,67 @@ export default function ActiveSubscription() {
         '¡Suscripción reactivada!',
         'Tu suscripción ha sido reactivada exitosamente.'
       );
-    } catch (err) {
-      error('Error al reactivar', 'No se pudo reactivar la suscripción. Intenta de nuevo.');
+    } catch (err: any) {
+      console.error('Reactivation error:', err);
+      error('Error al reactivar', err.message || 'No se pudo reactivar la suscripción. Intenta de nuevo.');
+    }
+  };
+
+  const handleUpgradeToPro = async () => {
+    try {
+      setShowUpgradeModal(false);
+      
+      // Get current user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        throw new Error('No user found');
+      }
+      
+      // Calculate new subscription end date (30 days from now)
+      const subscriptionEndDate = new Date();
+      subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 30);
+      
+      // Update user in database
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          plan: 'profesional',
+          subscription_status: 'active',
+          subscription_start_date: new Date().toISOString(),
+          subscription_end_date: subscriptionEndDate.toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentUser.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+      
+      // Update local state
+      const updatedUser = {
+        ...user!,
+        plan: 'profesional',
+        subscriptionStatus: 'active',
+        subscriptionStartDate: new Date().toISOString(),
+        subscriptionEndDate: subscriptionEndDate.toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      dispatch({ type: 'SET_USER', payload: updatedUser });
+      
+      success(
+        '¡Plan actualizado a Profesional!',
+        'Ahora tienes acceso a todas las funciones premium.'
+      );
+      
+      // Redirect to dashboard after a moment
+      setTimeout(() => {
+        window.location.href = '/admin';
+      }, 2000);
+    } catch (err: any) {
+      console.error('Upgrade error:', err);
+      error('Error al actualizar', err.message || 'No se pudo actualizar el plan. Intenta de nuevo.');
     }
   };
 
@@ -425,38 +526,38 @@ export default function ActiveSubscription() {
         </div>
       )}
 
-{/* Upgrade Modal */}
-{showUpgradeModal && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-    <div className="bg-white admin-dark:bg-gray-800 rounded-2xl max-w-md w-full p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-900 admin-dark:text-white">Actualizar Plan</h2>
-        <button
-          onClick={() => setShowUpgradeModal(false)}
-          className="p-2 hover:bg-gray-100 admin-dark:hover:bg-gray-700 rounded-lg transition-colors"
-        >
-          <X className="w-5 h-5" />
-        </button>
-      </div>
-      <div className="text-center mb-6">
-        <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 admin-dark:from-purple-900/30 admin-dark:to-pink-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Crown className="w-8 h-8 text-purple-600 admin-dark:text-purple-400" />
-        </div>
-        <h3 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-2">
-          Actualizar a Plan Profesional
-        </h3> 
-        <p className="text-gray-600 admin-dark:text-gray-300">
-          Obtén hasta 5 tiendas y 50 productos por tienda
-        </p>
-      </div>
-<div className={`${isDarkMode ? 'bg-gray-900' : 'bg-purple-100'} rounded-lg p-4 mb-6`}>
-  <div className="text-center">
-    <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-1`}>$9.99/mes</div>
-    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-      Diferencia: +$5.00/mes
-    </p> 
-  </div>
-</div>
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white admin-dark:bg-gray-800 rounded-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-gray-900 admin-dark:text-white">Actualizar Plan</h2>
+              <button
+                onClick={() => setShowUpgradeModal(false)}
+                className="p-2 hover:bg-gray-100 admin-dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-gradient-to-r from-purple-100 to-pink-100 admin-dark:from-purple-900/30 admin-dark:to-pink-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Crown className="w-8 h-8 text-purple-600 admin-dark:text-purple-400" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-2">
+                Actualizar a Plan Profesional
+              </h3> 
+              <p className="text-gray-600 admin-dark:text-gray-300">
+                Obtén hasta 5 tiendas y 50 productos por tienda
+              </p>
+            </div>
+            <div className={`${isDarkMode ? 'bg-gray-900' : 'bg-purple-100'} rounded-lg p-4 mb-6`}>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-1`}>$9.99/mes</div>
+                <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Diferencia: +$5.00/mes
+                </p> 
+              </div>
+            </div>
 
             <div className="flex gap-3">
               <button
@@ -465,13 +566,12 @@ export default function ActiveSubscription() {
               >
                 Cancelar
               </button>
-              <a
-                href="/subscription"
-                onClick={() => setShowUpgradeModal(false)}
-                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-colors text-center"
+              <button
+                onClick={handleUpgradeToPro}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg font-medium transition-colors"
               >
                 Actualizar Ahora
-              </a>
+              </button>
             </div>
           </div>
         </div>
