@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
@@ -12,6 +12,19 @@ export default function LoginPage() {
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
   const { state, login, register } = useStore();
+
+  // ✅ CRÍTICO: Redirigir cuando el usuario se autentique
+  useEffect(() => {
+    console.log('LoginPage - Auth state changed:', { 
+      isAuthenticated: state.isAuthenticated, 
+      user: state.user?.email 
+    });
+    
+    if (state.isAuthenticated && state.user) {
+      console.log('User is authenticated, redirecting to admin...');
+      navigate('/admin', { replace: true });
+    }
+  }, [state.isAuthenticated, state.user, navigate]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -41,6 +54,8 @@ export default function LoginPage() {
     
     if (!validateForm()) return;
 
+    setErrors({}); // Clear previous errors
+
     try {
       console.log('Form submitted:', { isRegister, email });
       
@@ -50,9 +65,7 @@ export default function LoginPage() {
         await login(email, password);
       }
       
-      // Redirect to admin after successful auth
-      console.log('Auth successful, redirecting to admin...');
-      navigate('/admin', { replace: true });
+      console.log('Auth function completed successfully');
       
     } catch (error) {
       console.error('Auth error:', error);

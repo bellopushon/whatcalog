@@ -29,14 +29,23 @@ import SubscriptionPage from './components/subscription/SubscriptionPage';
 // Public Components
 import PublicCatalog from './components/catalog/PublicCatalog';
 
-// Simple protected route component
+// ✅ CRÍTICO: ProtectedRoute que verifica correctamente el estado
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { state } = useStore();
   
+  console.log('ProtectedRoute - Current state:', {
+    isAuthenticated: state.isAuthenticated,
+    user: state.user?.email,
+    isLoading: state.isLoading
+  });
+  
+  // Si no está autenticado, redirigir al login
   if (!state.isAuthenticated) {
+    console.log('User not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }
   
+  console.log('User is authenticated, rendering protected content');
   return <>{children}</>;
 }
 
@@ -76,10 +85,25 @@ function AppRoutes() {
     }
   }, [location.pathname, isDarkMode]);
   
+  console.log('AppRoutes - Current state:', {
+    isAuthenticated: state.isAuthenticated,
+    user: state.user?.email,
+    pathname: location.pathname
+  });
+  
   return (
     <Routes> 
       {/* Public Routes */}
-      <Route path="/login" element={state.isAuthenticated ? <Navigate to="/admin\" replace /> : <LoginPage />} />
+      <Route 
+        path="/login" 
+        element={
+          state.isAuthenticated ? (
+            <Navigate to="/admin" replace />
+          ) : (
+            <LoginPage />
+          )
+        } 
+      />
       <Route path="/store/:slug" element={<PublicCatalog />} />
       
       {/* Protected Admin Routes */}
@@ -115,7 +139,15 @@ function AppRoutes() {
       } />
       
       {/* Default redirects */}
-      <Route path="/" element={<Navigate to={state.isAuthenticated ? "/admin" : "/login"} replace />} />
+      <Route 
+        path="/" 
+        element={
+          <Navigate 
+            to={state.isAuthenticated ? "/admin" : "/login"} 
+            replace 
+          />
+        } 
+      />
     </Routes>
   );
 }
