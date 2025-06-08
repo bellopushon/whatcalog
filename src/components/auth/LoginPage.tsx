@@ -106,7 +106,6 @@ useEffect(() => {
     }, 500);
   }
   break;
-}
         }
 
         case 'register': {
