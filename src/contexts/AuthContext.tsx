@@ -115,6 +115,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             error: null,
           });
 
+          // Force redirect after successful auth
+if (authUser && location.pathname === '/login') {
+  setTimeout(() => {
+    window.location.href = '/admin';
+  }, 100);
+}
+
           // Redirigir si estamos en login
           if (location.pathname === '/login' && authUser) {
             navigate('/admin');
