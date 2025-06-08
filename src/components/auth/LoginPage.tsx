@@ -117,7 +117,7 @@ const handleSubmit = async (e) => {
       setIsLoading(false);
     } 
 
-    // ✅ IMPORTANTE: No setear isLoading(false) aquí para mantener el estado de carga hasta la redirección
+    // ✅ sIMPORTANTE: No setear isLoading(false) aquí para mantener el estado de carga hasta la redirección
   };
 
   const handleInputChange = (field, value) => {
