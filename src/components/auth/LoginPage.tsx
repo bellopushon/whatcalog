@@ -194,7 +194,7 @@ useEffect(() => {
                     errors.name ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Tu nombre"
-                  disabled={isSubmitting || isLoading}
+                  disabled={isSubmitting}
                 />
                 {errors.name && (
                   <p className="text-red-500 text-sm mt-1">{errors.name}</p>
@@ -217,7 +217,7 @@ useEffect(() => {
                     errors.email ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="tu@email.com"
-                  disabled={isSubmitting || isLoading}
+                  disabled={isSubmitting}
                   autoComplete="email"
                 />
               </div>
@@ -242,14 +242,14 @@ useEffect(() => {
                       errors.password ? 'border-red-300' : 'border-gray-300'
                     }`}
                     placeholder="••••••••"
-                    disabled={isSubmitting || isLoading}
+                    disabled={isSubmitting}
                     autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-                    disabled={isSubmitting || isLoading}
+                    disabled={isSubmitting} || isLoading}
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -276,7 +276,7 @@ useEffect(() => {
             {/* Botón de submit */}
             <button
               type="submit"
-              disabled={isSubmitting || isLoading}
+              disabled={isSubmitting}
               className="w-full bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-700 hover:to-pink-700 
                        disabled:from-gray-400 disabled:to-gray-400 text-white py-3 px-4 rounded-lg font-medium 
                        transition-all transform hover:scale-[1.02] disabled:transform-none disabled:cursor-not-allowed 
@@ -316,7 +316,7 @@ useEffect(() => {
                 <button
                   type="button"
                   onClick={() => showError('Próximamente', 'Google login estará disponible pronto')}
-                  disabled={isSubmitting || isLoading}
+                  disabled={isSubmitting}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg 
                            hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -344,7 +344,7 @@ useEffect(() => {
                 <button
                   type="button"
                   onClick={() => showError('Próximamente', 'GitHub login estará disponible pronto')}
-                  disabled={isSubmitting || isLoading}
+                  disabled={isSubmitting}
                   className="flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg 
                            hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
