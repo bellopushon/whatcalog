@@ -442,33 +442,62 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Process authenticated user
-  const processAuthenticatedUser = async (supabaseUser: SupabaseUser) => {
+  const processAuthenticatedUser = async (supabaseUser: SupabaseUser, isNewUser = false) => {
     try {
-      console.log('Processing authenticated user:', supabaseUser.email);
+      console.log('Processing authenticated user:', supabaseUser.email, 'isNewUser:', isNewUser);
 
-      // Create or update user profile in database
-      const { error: upsertError } = await supabase
-        .from('users')
-        .upsert({
-          id: supabaseUser.id,
-          email: supabaseUser.email!,
-          name: supabaseUser.user_metadata?.name || supabaseUser.email!.split('@')[0],
-          plan: 'gratuito',
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'id'
-        });
+      // For new users, create the profile first
+      if (isNewUser) {
+        const { error: insertError } = await supabase
+          .from('users')
+          .insert({
+            id: supabaseUser.id,
+            email: supabaseUser.email!,
+            name: supabaseUser.user_metadata?.name || supabaseUser.email!.split('@')[0],
+            plan: 'gratuito',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
 
-      if (upsertError) {
-        console.error('Error upserting user:', upsertError);
+        if (insertError) {
+          console.error('Error creating user profile:', insertError);
+          // If user already exists, that's okay
+          if (insertError.code !== '23505') {
+            throw insertError;
+          }
+        }
+      } else {
+        // For existing users, update the profile
+        const { error: upsertError } = await supabase
+          .from('users')
+          .upsert({
+            id: supabaseUser.id,
+            email: supabaseUser.email!,
+            name: supabaseUser.user_metadata?.name || supabaseUser.email!.split('@')[0],
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'id'
+          });
+
+        if (upsertError) {
+          console.error('Error updating user profile:', upsertError);
+        }
       }
 
-      // Load user data from database
-      const { data: userData } = await supabase
+      // Wait a moment for the database to be consistent
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Load fresh user data from database
+      const { data: userData, error: userError } = await supabase
         .from('users')
         .select('*')
         .eq('id', supabaseUser.id)
         .single();
+
+      if (userError) {
+        console.error('Error loading user data after auth:', userError);
+        throw userError;
+      }
 
       const appUser = transformSupabaseUserToAppUser(supabaseUser, userData);
       
@@ -523,7 +552,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           console.log('Found existing session for user:', session.user.email);
           if (mounted && !authInitialized) {
-            await processAuthenticatedUser(session.user);
+            await processAuthenticatedUser(session.user, false);
             authInitialized = true;
           }
         } else {
@@ -553,7 +582,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
         if (event === 'SIGNED_IN' && session?.user) {
           console.log('User signed in:', session.user.email);
-          await processAuthenticatedUser(session.user);
+          await processAuthenticatedUser(session.user, false);
+        } else if (event === 'SIGNED_UP' && session?.user) {
+          console.log('User signed up:', session.user.email);
+          await processAuthenticatedUser(session.user, true);
         } else if (event === 'SIGNED_OUT') {
           console.log('User signed out');
           dispatch({ type: 'LOGOUT' });
@@ -562,13 +594,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           console.log('Token refreshed for user:', session.user.email);
           // Don't re-process user data on token refresh if already authenticated
           if (!state.isAuthenticated) {
-            await processAuthenticatedUser(session.user);
+            await processAuthenticatedUser(session.user, false);
           }
         } else if (event === 'INITIAL_SESSION') {
           // Handle initial session - this is called after getSession()
           if (session?.user && !state.isAuthenticated && !authInitialized) {
             console.log('Processing initial session for:', session.user.email);
-            await processAuthenticatedUser(session.user);
+            await processAuthenticatedUser(session.user, false);
             authInitialized = true;
           } else if (!session && !authInitialized) {
             dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null, isInitialized: true } });
