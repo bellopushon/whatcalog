@@ -204,227 +204,224 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Left Column - Basic Info */}
-          <div className="space-y-6">
-            <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Información Básica</h2>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
-                    Nombre del producto *
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
-                      errors.name ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="Ej: iPhone 15 Pro Max"
-                    maxLength={100}
-                  />
-                  {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
-                    Descripción corta (opcional)
-                  </label>
-                  <input
-                    type="text"
-                    name="shortDescription"
-                    value={formData.shortDescription}
-                    onChange={handleInputChange}
-                    maxLength={100}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
-                      errors.shortDescription ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="Breve descripción para el catálogo"
-                  />
-                  <div className="flex justify-between items-center mt-1">
-                    {errors.shortDescription && <p className="text-red-500 text-sm">{errors.shortDescription}</p>}
-                    <p className="text-xs text-gray-500 admin-dark:text-gray-400 ml-auto">
-                      {formData.shortDescription.length}/100 caracteres
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
-                      Precio *
-                    </label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleInputChange}
-                      min="0"
-                      step="0.01"
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
-                        errors.price ? 'border-red-300' : 'border-gray-300'
-                      }`}
-                      placeholder="0.00"
+        <div className="grid grid-cols-1 gap-6">
+          {/* Main Image - 1080x1080 format */}
+          <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4">
+            <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Imagen Principal</h2>
+            
+            <div className="flex flex-col items-center">
+              {formData.mainImage ? (
+                <div className="relative w-full max-w-md mx-auto">
+                  <div className="aspect-square w-full overflow-hidden rounded-lg">
+                    <img
+                      src={formData.mainImage}
+                      alt="Vista previa"
+                      className="w-full h-full object-cover"
                     />
-                    {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, mainImage: '' }))}
+                    className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="aspect-square w-full max-w-md mx-auto border-2 border-dashed border-gray-300 admin-dark:border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 admin-dark:hover:bg-indigo-900/20 transition-colors"
+                >
+                  <Upload className="w-12 h-12 text-gray-400 mb-4" />
+                  <p className="text-gray-600 admin-dark:text-gray-300 font-medium mb-2">Clic para subir imagen</p>
+                  <p className="text-sm text-gray-500 admin-dark:text-gray-400">Recomendado: 1080×1080px</p>
+                  <p className="text-xs text-gray-500 admin-dark:text-gray-400 mt-1">JPG, PNG o WEBP (máx. 5MB)</p>
+                </div>
+              )}
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageUpload(e, 'main')}
+                className="hidden"
+              />
+            </div>
+          </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
-                      Categoría *
-                    </label>
-                    <select
-                      name="categoryId"
-                      value={formData.categoryId}
-                      onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white ${
-                        errors.categoryId ? 'border-red-300' : 'border-gray-300'
-                      }`}
-                    >
-                      <option value="">Seleccionar categoría</option>
-                      {categories.map(category => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                    {errors.categoryId && <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>}
-                  </div>
+          {/* Basic Info */}
+          <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4">
+            <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Información Básica</h2>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
+                  Nombre del producto *
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
+                    errors.name ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="Ej: iPhone 15 Pro Max"
+                  maxLength={100}
+                />
+                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
+                  Descripción corta (opcional)
+                </label>
+                <input
+                  type="text"
+                  name="shortDescription"
+                  value={formData.shortDescription}
+                  onChange={handleInputChange}
+                  maxLength={100}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
+                    errors.shortDescription ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="Breve descripción para el catálogo"
+                />
+                <div className="flex justify-between items-center mt-1">
+                  {errors.shortDescription && <p className="text-red-500 text-sm">{errors.shortDescription}</p>}
+                  <p className="text-xs text-gray-500 admin-dark:text-gray-400 ml-auto">
+                    {formData.shortDescription.length}/100 caracteres
+                  </p>
                 </div>
               </div>
-            </div>
 
-            {/* Settings */}
-            <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Configuración</h2>
-              
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 admin-dark:text-gray-300">Estado</label>
-                    <p className="text-xs text-gray-500 admin-dark:text-gray-400">Mostrar producto en el catálogo</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="isActive"
-                      checked={formData.isActive}
-                      onChange={handleInputChange}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 admin-dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
+                    Precio *
                   </label>
+                  <input
+                    type="number"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    min="0"
+                    step="0.01"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
+                      errors.price ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="0.00"
+                  />
+                  {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <label className="text-sm font-medium text-gray-700 admin-dark:text-gray-300">Producto Destacado</label>
-                    <p className="text-xs text-gray-500 admin-dark:text-gray-400">Mostrar con una insignia especial</p>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      name="isFeatured"
-                      checked={formData.isFeatured}
-                      onChange={handleInputChange}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 admin-dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-yellow-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
+                    Categoría *
                   </label>
+                  <select
+                    name="categoryId"
+                    value={formData.categoryId}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white ${
+                      errors.categoryId ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                  >
+                    <option value="">Seleccionar categoría</option>
+                    {categories.map(category => (
+                      <option key={category.id} value={category.id}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.categoryId && <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Right Column - Images */}
-          <div className="space-y-6">
-            {/* Main Image */}
-            <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Imagen Principal</h2>
-              
-              <div className="space-y-4">
-                {formData.mainImage ? (
-                  <div className="relative">
-                    <img
-                      src={formData.mainImage}
-                      alt="Preview"
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setFormData(prev => ({ ...prev, mainImage: '' }))}
-                      className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-gray-300 admin-dark:border-gray-600 rounded-lg p-8 text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 admin-dark:hover:bg-indigo-900/20 transition-colors"
+          {/* Gallery */}
+          <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4">
+            <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">
+              Galería Adicional
+              <span className="text-sm font-normal text-gray-500 admin-dark:text-gray-400 ml-2">(Hasta 5 imágenes)</span>
+            </h2>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {formData.gallery.map((image, index) => (
+                <div key={index} className="relative aspect-square">
+                  <img
+                    src={image}
+                    alt={`Galería ${index + 1}`}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeGalleryImage(index)}
+                    className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
                   >
-                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600 admin-dark:text-gray-300 font-medium mb-2">Clic para subir imagen</p>
-                    <p className="text-sm text-gray-500 admin-dark:text-gray-400">JPG, PNG o WEBP (máx. 5MB)</p>
-                  </div>
-                )}
-                
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload(e, 'main')}
-                  className="hidden"
-                />
-              </div>
-            </div>
-
-            {/* Gallery */}
-            <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">
-                Galería Adicional
-                <span className="text-sm font-normal text-gray-500 admin-dark:text-gray-400 ml-2">(Hasta 5 imágenes)</span>
-              </h2>
-              
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  {formData.gallery.map((image, index) => (
-                    <div key={index} className="relative">
-                      <img
-                        src={image}
-                        alt={`Gallery ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-lg"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeGalleryImage(index)}
-                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                  
-                  {formData.gallery.length < 5 && (
-                    <div
-                      onClick={() => galleryInputRef.current?.click()}
-                      className="border-2 border-dashed border-gray-300 admin-dark:border-gray-600 rounded-lg h-24 flex items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 admin-dark:hover:bg-indigo-900/20 transition-colors"
-                    >
-                      <Upload className="w-6 h-6 text-gray-400" />
-                    </div>
-                  )}
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-                
-                <input
-                  ref={galleryInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleImageUpload(e, 'gallery')}
-                  className="hidden"
-                />
+              ))}
+              
+              {formData.gallery.length < 5 && (
+                <div
+                  onClick={() => galleryInputRef.current?.click()}
+                  className="aspect-square border-2 border-dashed border-gray-300 admin-dark:border-gray-600 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 admin-dark:hover:bg-indigo-900/20 transition-colors"
+                >
+                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                  <p className="text-xs text-gray-500 admin-dark:text-gray-400">Añadir imagen</p>
+                </div>
+              )}
+            </div>
+            
+            <input
+              ref={galleryInputRef}
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleImageUpload(e, 'gallery')}
+              className="hidden"
+            />
+          </div>
+
+          {/* Settings */}
+          <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4">
+            <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Configuración</h2>
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 admin-dark:text-gray-300">Estado</label>
+                  <p className="text-xs text-gray-500 admin-dark:text-gray-400">Mostrar producto en el catálogo</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="isActive"
+                    checked={formData.isActive}
+                    onChange={handleInputChange}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 admin-dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-indigo-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 admin-dark:text-gray-300">Producto Destacado</label>
+                  <p className="text-xs text-gray-500 admin-dark:text-gray-400">Mostrar con una insignia especial</p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="isFeatured"
+                    checked={formData.isFeatured}
+                    onChange={handleInputChange}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-gray-200 admin-dark:bg-gray-600 rounded-full peer peer-focus:ring-2 peer-focus:ring-yellow-500 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+                </label>
               </div>
             </div>
           </div>
