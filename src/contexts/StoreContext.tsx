@@ -99,9 +99,7 @@ interface AppState {
   stores: Store[];
   currentStore: Store | null;
   isAuthenticated: boolean;
-  isLoaded: boolean;
   isLoading: boolean;
-  error: string | null;
 }
 
 type Action =
@@ -116,36 +114,27 @@ type Action =
   | { type: 'ADD_CATEGORY'; payload: Category }
   | { type: 'UPDATE_CATEGORY'; payload: Category }
   | { type: 'DELETE_CATEGORY'; payload: string }
-  | { type: 'SET_LOADED'; payload: boolean }
   | { type: 'SET_LOADING'; payload: boolean }
-  | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'LOGOUT' };
 
-// ✅ SOLUCIÓN CRÍTICA: Estado inicial que permite renderizado inmediato
 const initialState: AppState = {
   user: null,
   stores: [],
   currentStore: null,
   isAuthenticated: false,
-  isLoaded: true,  // ✅ CAMBIO CRÍTICO: Empezar como cargado
-  isLoading: false, // ✅ CAMBIO CRÍTICO: No mostrar loading inicial
-  error: null,
+  isLoading: false,
 };
 
 function storeReducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case 'SET_USER':
-      return { ...state, user: action.payload, isAuthenticated: true, error: null };
+      return { ...state, user: action.payload, isAuthenticated: true };
     case 'SET_STORES':
       return { ...state, stores: action.payload };
     case 'SET_CURRENT_STORE':
       return { ...state, currentStore: action.payload };
-    case 'SET_LOADED':
-      return { ...state, isLoaded: action.payload };
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
-    case 'SET_ERROR':
-      return { ...state, error: action.payload, isLoading: false };
     case 'DELETE_STORE':
       const updatedStores = state.stores.filter(store => store.id !== action.payload);
       const newCurrentStore = state.currentStore?.id === action.payload 
@@ -264,7 +253,7 @@ function storeReducer(state: AppState, action: Action): AppState {
         )
       };
     case 'LOGOUT':
-      return { ...initialState, isLoaded: true, isLoading: false };
+      return { ...initialState };
     default:
       return state;
   }
@@ -273,16 +262,9 @@ function storeReducer(state: AppState, action: Action): AppState {
 const StoreContext = createContext<{
   state: AppState;
   dispatch: React.Dispatch<Action>;
-  createStore?: (storeData: Partial<Store>) => Promise<Store>;
-  updateStore?: (storeId: string, updates: Partial<Store>) => Promise<void>;
-  deleteStore?: (storeId: string) => Promise<void>;
-  createProduct?: (productData: Omit<Product, 'id' | 'createdAt'>) => Promise<Product>;
-  updateProduct?: (productData: Product) => Promise<void>;
-  deleteProduct?: (productId: string) => Promise<void>;
-  createCategory?: (categoryData: Omit<Category, 'id' | 'createdAt'>) => Promise<Category>;
-  updateCategory?: (categoryData: Category) => Promise<void>;
-  deleteCategory?: (categoryId: string) => Promise<void>;
-  logout?: () => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name: string) => Promise<void>;
+  logout: () => Promise<void>;
 } | null>(null);
 
 // Helper functions to transform data between Supabase and app formats
@@ -380,15 +362,10 @@ function transformSupabaseStoreToAppStore(
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(storeReducer, initialState);
 
-  // 🔍 LOGGING: Add comprehensive logging
-  const log = (message: string, data?: any) => {
-    console.log(`[StoreContext] ${message}`, data || '');
-  };
-
-  // ✅ SOLUCIÓN: Carga de datos en background sin bloquear UI
-  const loadUserDataInBackground = async (userId: string) => {
+  // Load user data
+  const loadUserData = async (userId: string) => {
     try {
-      log('Loading user data in background for:', userId);
+      console.log('Loading user data for:', userId);
 
       // Load user profile
       const { data: userData, error: userError } = await supabase
@@ -398,7 +375,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (userError && userError.code !== 'PGRST116') {
-        log('Error loading user data:', userError);
+        console.error('Error loading user data:', userError);
         return;
       }
 
@@ -414,7 +391,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         .order('created_at', { ascending: true });
 
       if (storesError) {
-        log('Error loading stores:', storesError);
+        console.error('Error loading stores:', storesError);
         return;
       }
 
@@ -434,31 +411,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'SET_CURRENT_STORE', payload: transformedStores[0] });
       }
 
-      log('Background data loading completed successfully');
-
+      console.log('User data loaded successfully');
     } catch (error) {
-      log('Error in background data loading:', error);
+      console.error('Error loading user data:', error);
     }
   };
 
-  // ✅ SOLUCIÓN CRÍTICA: Inicialización que NO bloquea el renderizado
+  // Initialize auth
   useEffect(() => {
-    let mounted = true;
-
-    const initializeAuth = async () => {
+    const initAuth = async () => {
       try {
-        log('Initializing auth in background...');
+        console.log('Checking for existing session...');
         
-        // Get initial session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          log('Session error (non-blocking):', error);
+          console.error('Session error:', error);
           return;
         }
 
-        if (session?.user && mounted) {
-          log('User found in session, setting up...');
+        if (session?.user) {
+          console.log('Found existing session for user:', session.user.email);
           
           // Load user data from database
           const { data: userData, error: userError } = await supabase
@@ -468,29 +441,31 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             .single();
 
           if (userError && userError.code !== 'PGRST116') {
-            log('Error loading user profile (non-blocking):', userError);
+            console.error('Error loading user profile:', userError);
           }
 
           const appUser = transformSupabaseUserToAppUser(session.user, userData);
           dispatch({ type: 'SET_USER', payload: appUser });
           
-          // Load stores in background
-          loadUserDataInBackground(session.user.id);
+          // Load stores
+          await loadUserData(session.user.id);
+        } else {
+          console.log('No existing session found');
         }
       } catch (error) {
-        log('Non-blocking auth initialization error:', error);
+        console.error('Auth initialization error:', error);
       }
     };
+
+    initAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!mounted) return;
-
-        log('Auth state changed:', { event, session: !!session });
+        console.log('Auth state changed:', event, session?.user?.email);
 
         if (event === 'SIGNED_IN' && session?.user) {
-          log('User signed in, creating/updating profile...');
+          console.log('User signed in:', session.user.email);
           
           // Create or update user profile in database
           const { error: upsertError } = await supabase
@@ -506,7 +481,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             });
 
           if (upsertError) {
-            log('Error upserting user:', upsertError);
+            console.error('Error upserting user:', upsertError);
           }
 
           // Load user data from database
@@ -519,348 +494,92 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           const appUser = transformSupabaseUserToAppUser(session.user, userData);
           dispatch({ type: 'SET_USER', payload: appUser });
           
-          // Load stores in background
-          loadUserDataInBackground(session.user.id);
+          // Load stores
+          await loadUserData(session.user.id);
 
         } else if (event === 'SIGNED_OUT') {
-          log('User signed out');
+          console.log('User signed out');
           dispatch({ type: 'LOGOUT' });
-        } else if (event === 'USER_UPDATED' && session?.user) {
-          log('User updated');
-          const { data: userData } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          const appUser = transformSupabaseUserToAppUser(session.user, userData);
-          dispatch({ type: 'SET_USER', payload: appUser });
         }
       }
     );
 
-    // ✅ CRÍTICO: Inicializar en background sin bloquear
-    initializeAuth();
-
     return () => {
-      mounted = false;
       subscription.unsubscribe();
     };
   }, []);
 
-  // CRUD Operations for Stores
-  const createStore = async (storeData: Partial<Store>) => {
+  // Login function
+  const login = async (email: string, password: string) => {
+    console.log('Attempting login for:', email);
+    dispatch({ type: 'SET_LOADING', payload: true });
+    
     try {
-      log('Creating store:', storeData);
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password: password
+      });
 
-      const insertData: TablesInsert<'stores'> = {
-        user_id: user.id,
-        name: storeData.name!,
-        slug: storeData.slug!,
-        description: storeData.description,
-        logo: storeData.logo,
-        whatsapp: storeData.whatsapp,
-        currency: storeData.currency || 'USD',
-        heading_font: storeData.fonts?.heading || 'Inter',
-        body_font: storeData.fonts?.body || 'Inter',
-        color_palette: storeData.theme?.colorPalette || 'predeterminado',
-        theme_mode: storeData.theme?.mode || 'light',
-        border_radius: storeData.theme?.borderRadius || 8,
-        products_per_page: storeData.theme?.productsPerPage || 12,
-        facebook_url: storeData.socialMedia?.facebook,
-        instagram_url: storeData.socialMedia?.instagram,
-        tiktok_url: storeData.socialMedia?.tiktok,
-        twitter_url: storeData.socialMedia?.twitter,
-        show_social_in_catalog: storeData.socialMedia?.showInCatalog ?? true,
-        accept_cash: storeData.paymentMethods?.cash ?? true,
-        accept_bank_transfer: storeData.paymentMethods?.bankTransfer ?? false,
-        bank_details: storeData.paymentMethods?.bankDetails,
-        allow_pickup: storeData.shippingMethods?.pickup ?? true,
-        allow_delivery: storeData.shippingMethods?.delivery ?? false,
-        delivery_cost: storeData.shippingMethods?.deliveryCost || 0,
-        delivery_zone: storeData.shippingMethods?.deliveryZone,
-        message_greeting: storeData.messageTemplate?.greeting,
-        message_introduction: storeData.messageTemplate?.introduction,
-        message_closing: storeData.messageTemplate?.closing,
-        include_phone_in_message: storeData.messageTemplate?.includePhone ?? true,
-        include_comments_in_message: storeData.messageTemplate?.includeComments ?? true,
-      };
+      if (error) {
+        console.error('Login error:', error);
+        throw new Error(error.message);
+      }
 
-      const { data, error } = await supabase
-        .from('stores')
-        .insert([insertData])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const newStore = transformSupabaseStoreToAppStore(data);
-      dispatch({ type: 'SET_STORES', payload: [...state.stores, newStore] });
-      dispatch({ type: 'SET_CURRENT_STORE', payload: newStore });
-
-      log('Store created successfully:', newStore);
-      return newStore;
-    } catch (error) {
-      log('Error creating store:', error);
-      throw error;
-    }
-  };
-
-  const updateStore = async (storeId: string, updates: Partial<Store>) => {
-    try {
-      log('Updating store:', { storeId, updates });
+      console.log('Login successful for:', email);
+      // The auth state change listener will handle the rest
       
-      const updateData: TablesUpdate<'stores'> = {
-        name: updates.name,
-        slug: updates.slug,
-        description: updates.description,
-        logo: updates.logo,
-        whatsapp: updates.whatsapp,
-        currency: updates.currency,
-        heading_font: updates.fonts?.heading,
-        body_font: updates.fonts?.body,
-        color_palette: updates.theme?.colorPalette,
-        theme_mode: updates.theme?.mode,
-        border_radius: updates.theme?.borderRadius,
-        products_per_page: updates.theme?.productsPerPage,
-        facebook_url: updates.socialMedia?.facebook,
-        instagram_url: updates.socialMedia?.instagram,
-        tiktok_url: updates.socialMedia?.tiktok,
-        twitter_url: updates.socialMedia?.twitter,
-        show_social_in_catalog: updates.socialMedia?.showInCatalog,
-        accept_cash: updates.paymentMethods?.cash,
-        accept_bank_transfer: updates.paymentMethods?.bankTransfer,
-        bank_details: updates.paymentMethods?.bankDetails,
-        allow_pickup: updates.shippingMethods?.pickup,
-        allow_delivery: updates.shippingMethods?.delivery,
-        delivery_cost: updates.shippingMethods?.deliveryCost,
-        delivery_zone: updates.shippingMethods?.deliveryZone,
-        message_greeting: updates.messageTemplate?.greeting,
-        message_introduction: updates.messageTemplate?.introduction,
-        message_closing: updates.messageTemplate?.closing,
-        include_phone_in_message: updates.messageTemplate?.includePhone,
-        include_comments_in_message: updates.messageTemplate?.includeComments,
-      };
-
-      const { error } = await supabase
-        .from('stores')
-        .update(updateData)
-        .eq('id', storeId);
-
-      if (error) throw error;
-
-      dispatch({ type: 'UPDATE_STORE', payload: updates });
-      log('Store updated successfully');
     } catch (error) {
-      log('Error updating store:', error);
+      console.error('Login failed:', error);
       throw error;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
-  const deleteStore = async (storeId: string) => {
+  // Register function
+  const register = async (email: string, password: string, name: string) => {
+    console.log('Attempting registration for:', email);
+    dispatch({ type: 'SET_LOADING', payload: true });
+    
     try {
-      log('Deleting store:', storeId);
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          data: {
+            name: name.trim(),
+            plan: 'gratuito'
+          }
+        }
+      });
+
+      if (error) {
+        console.error('Registration error:', error);
+        throw new Error(error.message);
+      }
+
+      console.log('Registration successful for:', email);
+      // The auth state change listener will handle the rest
       
-      const { error } = await supabase
-        .from('stores')
-        .delete()
-        .eq('id', storeId);
-
-      if (error) throw error;
-
-      dispatch({ type: 'DELETE_STORE', payload: storeId });
-      log('Store deleted successfully');
     } catch (error) {
-      log('Error deleting store:', error);
+      console.error('Registration failed:', error);
       throw error;
-    }
-  };
-
-  // CRUD Operations for Products
-  const createProduct = async (productData: Omit<Product, 'id' | 'createdAt'>) => {
-    try {
-      log('Creating product:', productData);
-      if (!state.currentStore) throw new Error('No current store selected');
-
-      const insertData: TablesInsert<'products'> = {
-        store_id: state.currentStore.id,
-        category_id: productData.categoryId || null,
-        name: productData.name,
-        short_description: productData.shortDescription,
-        long_description: productData.longDescription,
-        price: productData.price,
-        main_image: productData.mainImage,
-        gallery: productData.gallery,
-        is_active: productData.isActive,
-        is_featured: productData.isFeatured,
-      };
-
-      const { data, error } = await supabase
-        .from('products')
-        .insert([insertData])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const newProduct: Product = {
-        id: data.id,
-        name: data.name,
-        shortDescription: data.short_description || '',
-        longDescription: data.long_description || '',
-        price: data.price,
-        categoryId: data.category_id || '',
-        mainImage: data.main_image || '',
-        gallery: Array.isArray(data.gallery) ? data.gallery : [],
-        isActive: data.is_active ?? true,
-        isFeatured: data.is_featured ?? false,
-        createdAt: data.created_at || new Date().toISOString(),
-      };
-
-      dispatch({ type: 'ADD_PRODUCT', payload: newProduct });
-      log('Product created successfully:', newProduct);
-      return newProduct;
-    } catch (error) {
-      log('Error creating product:', error);
-      throw error;
-    }
-  };
-
-  const updateProduct = async (productData: Product) => {
-    try {
-      log('Updating product:', productData);
-      
-      const updateData: TablesUpdate<'products'> = {
-        category_id: productData.categoryId || null,
-        name: productData.name,
-        short_description: productData.shortDescription,
-        long_description: productData.longDescription,
-        price: productData.price,
-        main_image: productData.mainImage,
-        gallery: productData.gallery,
-        is_active: productData.isActive,
-        is_featured: productData.isFeatured,
-      };
-
-      const { error } = await supabase
-        .from('products')
-        .update(updateData)
-        .eq('id', productData.id);
-
-      if (error) throw error;
-
-      dispatch({ type: 'UPDATE_PRODUCT', payload: productData });
-      log('Product updated successfully');
-    } catch (error) {
-      log('Error updating product:', error);
-      throw error;
-    }
-  };
-
-  const deleteProduct = async (productId: string) => {
-    try {
-      log('Deleting product:', productId);
-      
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productId);
-
-      if (error) throw error;
-
-      dispatch({ type: 'DELETE_PRODUCT', payload: productId });
-      log('Product deleted successfully');
-    } catch (error) {
-      log('Error deleting product:', error);
-      throw error;
-    }
-  };
-
-  // CRUD Operations for Categories
-  const createCategory = async (categoryData: Omit<Category, 'id' | 'createdAt'>) => {
-    try {
-      log('Creating category:', categoryData);
-      if (!state.currentStore) throw new Error('No current store selected');
-
-      const insertData: TablesInsert<'categories'> = {
-        store_id: state.currentStore.id,
-        name: categoryData.name,
-      };
-
-      const { data, error } = await supabase
-        .from('categories')
-        .insert([insertData])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      const newCategory: Category = {
-        id: data.id,
-        name: data.name,
-        createdAt: data.created_at || new Date().toISOString(),
-      };
-
-      dispatch({ type: 'ADD_CATEGORY', payload: newCategory });
-      log('Category created successfully:', newCategory);
-      return newCategory;
-    } catch (error) {
-      log('Error creating category:', error);
-      throw error;
-    }
-  };
-
-  const updateCategory = async (categoryData: Category) => {
-    try {
-      log('Updating category:', categoryData);
-      
-      const { error } = await supabase
-        .from('categories')
-        .update({ name: categoryData.name })
-        .eq('id', categoryData.id);
-
-      if (error) throw error;
-
-      dispatch({ type: 'UPDATE_CATEGORY', payload: categoryData });
-      log('Category updated successfully');
-    } catch (error) {
-      log('Error updating category:', error);
-      throw error;
-    }
-  };
-
-  const deleteCategory = async (categoryId: string) => {
-    try {
-      log('Deleting category:', categoryId);
-      
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', categoryId);
-
-      if (error) throw error;
-
-      dispatch({ type: 'DELETE_CATEGORY', payload: categoryId });
-      log('Category deleted successfully');
-    } catch (error) {
-      log('Error deleting category:', error);
-      throw error;
+    } finally {
+      dispatch({ type: 'SET_LOADING', payload: false });
     }
   };
 
   // Logout function
   const logout = async () => {
+    console.log('Logging out...');
     try {
-      log('Logging out...');
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
       dispatch({ type: 'LOGOUT' });
-      log('Logout successful');
+      console.log('Logout successful');
     } catch (error) {
-      log('Error signing out:', error);
+      console.error('Error signing out:', error);
       throw error;
     }
   };
@@ -869,16 +588,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     <StoreContext.Provider value={{ 
       state, 
       dispatch,
-      // Expose CRUD operations
-      createStore,
-      updateStore,
-      deleteStore,
-      createProduct,
-      updateProduct,
-      deleteProduct,
-      createCategory,
-      updateCategory,
-      deleteCategory,
+      login,
+      register,
       logout,
     }}>
       {children}

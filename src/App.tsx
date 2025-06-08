@@ -29,11 +29,10 @@ import SubscriptionPage from './components/subscription/SubscriptionPage';
 // Public Components
 import PublicCatalog from './components/catalog/PublicCatalog';
 
-// ✅ SOLUCIÓN CRÍTICA: ProtectedRoute que NO bloquea el renderizado
+// Simple protected route component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { state } = useStore();
   
-  // ✅ CAMBIO CRÍTICO: Solo verificar autenticación, no estados de carga
   if (!state.isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
@@ -46,7 +45,7 @@ function AppRoutes() {
   const { isDarkMode } = useTheme();
   const location = useLocation();
   
-  // SOLUCIÓN ROBUSTA: Control absoluto del modo oscuro basado en rutas
+  // Handle dark mode for admin routes only
   useEffect(() => {
     const isAdminRoute = location.pathname.startsWith('/admin') || 
                         location.pathname === '/profile' || 
@@ -55,12 +54,12 @@ function AppRoutes() {
     const isPublicRoute = location.pathname.startsWith('/store/') || 
                          location.pathname === '/login';
     
-    // FORZAR modo claro para rutas públicas
+    // Force light mode for public routes
     if (isPublicRoute) {
       document.documentElement.classList.remove('admin-dark');
       document.body.classList.remove('admin-dark');
     }
-    // APLICAR preferencia de usuario solo en rutas de admin
+    // Apply user preference only for admin routes
     else if (isAdminRoute) {
       if (isDarkMode) {
         document.documentElement.classList.add('admin-dark');
@@ -70,19 +69,18 @@ function AppRoutes() {
         document.body.classList.remove('admin-dark');
       }
     }
-    // LIMPIAR para cualquier otra ruta
+    // Clean up for any other route
     else {
       document.documentElement.classList.remove('admin-dark');
       document.body.classList.remove('admin-dark');
     }
   }, [location.pathname, isDarkMode]);
   
-  // ✅ CRÍTICO: Renderizar inmediatamente sin verificar estados de carga
   return (
     <Routes> 
       {/* Public Routes */}
-      <Route path="/login" element={state.isAuthenticated ? <Navigate to="/admin\" replace /> : <LoginPage />} />
-      <Route path="/store/:slug\" element={<PublicCatalog />} />
+      <Route path="/login" element={state.isAuthenticated ? <Navigate to="/admin" replace /> : <LoginPage />} />
+      <Route path="/store/:slug" element={<PublicCatalog />} />
       
       {/* Protected Admin Routes */}
       <Route path="/admin" element={

@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingBag, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
-import { supabase } from '../../lib/supabase';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -10,18 +9,9 @@ export default function LoginPage() {
   const [name, setName] = useState('');
   const [isRegister, setIsRegister] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-  const { state } = useStore();
-
-  // ✅ SOLUCIÓN CRÍTICA: Redirigir automáticamente cuando el usuario se autentique
-  useEffect(() => {
-    if (state.isAuthenticated && !isLoading) {
-      console.log('[LoginPage] User authenticated, redirecting to admin...');
-      navigate('/admin', { replace: true });
-    }
-  }, [state.isAuthenticated, isLoading, navigate]);
+  const { state, login, register } = useStore();
 
   const validateForm = () => {
     const newErrors = {};
@@ -46,78 +36,28 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-const handleSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) return;
 
-    setIsLoading(true);
-    setErrors({});
-
     try {
-      console.log('[LoginPage] Attempting auth:', { isRegister, email });
+      console.log('Form submitted:', { isRegister, email });
       
       if (isRegister) {
-        // Registro con Supabase
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password: password,
-          options: {
-            data: {
-              name: name.trim(),
-              plan: 'gratuito'
-            }
-          }
-        });
-
-        console.log('[LoginPage] Registration result:', { data, error });
-
-        if (error) {
-          console.error('Registration error:', error);
-          setErrors({ general: error.message || 'Error al crear la cuenta. Intenta de nuevo.' });
-          setIsLoading(false);
-          return;
-        }
-
-        if (data.user && !data.session) {
-          // Email confirmation required
-          setErrors({ 
-            general: 'Te hemos enviado un email de confirmación. Por favor revisa tu bandeja de entrada.' 
-          });
-          setIsLoading(false);
-          return;
-        }
-
-        // Si el registro fue exitoso y hay sesión, el useEffect manejará la redirección
-        console.log('[LoginPage] Registration successful, waiting for auth state...');
-        
+        await register(email, password, name);
       } else {
-        // Inicio de sesión con Supabase
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password: password
-        });
-
-        console.log('[LoginPage] Login result:', { data, error });
-
-        if (error) {
-          console.error('Login error:', error);
-          setErrors({ general: 'Email o contraseña incorrectos.' });
-          setIsLoading(false);
-          return;
-        }
-
-        // Si el login fue exitoso, el useEffect manejará la redirección
-        console.log('[LoginPage] Login successful, waiting for auth state...');
+        await login(email, password);
       }
+      
+      // Redirect to admin after successful auth
+      console.log('Auth successful, redirecting to admin...');
+      navigate('/admin', { replace: true });
       
     } catch (error) {
       console.error('Auth error:', error);
-      setErrors({ general: 'Error de conexión. Por favor intenta de nuevo.' });
-      setIsLoading(false);
-    } 
-
-    // ✅ sIMPORTANTE: No setear isLoading(false) aquí para mantener el estado de carga hasta la redirección
+      setErrors({ general: error.message || 'Error de autenticación. Intenta de nuevo.' });
+    }
   };
 
   const handleInputChange = (field, value) => {
@@ -167,7 +107,7 @@ const handleSubmit = async (e) => {
                     errors.name ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Tu nombre"
-                  disabled={isLoading}
+                  disabled={state.isLoading}
                   required
                 />
                 {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
@@ -188,7 +128,7 @@ const handleSubmit = async (e) => {
                     errors.email ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="tu@email.com"
-                  disabled={isLoading}
+                  disabled={state.isLoading}
                   required
                 />
               </div>
@@ -209,14 +149,14 @@ const handleSubmit = async (e) => {
                     errors.password ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="••••••••"
-                  disabled={isLoading}
+                  disabled={state.isLoading}
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  disabled={isLoading}
+                  disabled={state.isLoading}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -226,10 +166,10 @@ const handleSubmit = async (e) => {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={state.isLoading}
               className="w-full bg-gradient-to-r from-indigo-600 to-pink-600 hover:from-indigo-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-400 text-white py-3 px-4 rounded-lg font-medium transition-all transform hover:scale-105 disabled:transform-none disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isLoading ? (
+              {state.isLoading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   {isRegister ? 'Creando cuenta...' : 'Iniciando sesión...'}
@@ -250,7 +190,7 @@ const handleSubmit = async (e) => {
                 setPassword('');
                 setName('');
               }}
-              disabled={isLoading}
+              disabled={state.isLoading}
               className="text-indigo-600 hover:text-indigo-800 font-medium disabled:opacity-50"
             >
               {isRegister ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate'}
