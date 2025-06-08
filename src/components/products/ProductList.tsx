@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Plus, Search, Edit, Trash2, Copy, Eye, EyeOff, Package, Filter, ChevronRight } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Copy, Eye, EyeOff, Package, Filter, ChevronRight, Download } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useToast } from '../../contexts/ToastContext';
 import { formatCurrency } from '../../utils/constants';
 import ProductForm from './ProductForm';
+import ExportModal from './ExportModal';
 
 export default function ProductList() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -15,6 +16,7 @@ export default function ProductList() {
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState<string | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
   
   const { state, updateProduct, deleteProduct, getMaxProducts, createProduct } = useStore();
   const { success, error } = useToast();
@@ -126,15 +128,27 @@ export default function ProductList() {
           <h1 className="text-xl font-bold text-gray-900 admin-dark:text-white">Productos</h1>
           <p className="text-sm text-gray-600 admin-dark:text-gray-300">Gestiona tu catálogo</p>
         </div>
-        {canCreateProduct && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-full shadow-md transition-colors"
-            aria-label="Añadir producto"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {products.length > 0 && (
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="bg-white admin-dark:bg-gray-700 hover:bg-gray-100 admin-dark:hover:bg-gray-600 text-gray-700 admin-dark:text-gray-300 p-2 rounded-full shadow-md transition-colors"
+              aria-label="Exportar productos"
+              title="Exportar productos"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+          )}
+          {canCreateProduct && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white p-2 rounded-full shadow-md transition-colors"
+              aria-label="Añadir producto"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Plan Limits - Compact */}
@@ -342,6 +356,11 @@ export default function ProductList() {
             );
           })}
         </div>
+      )}
+
+      {/* Export Modal */}
+      {showExportModal && (
+        <ExportModal onClose={() => setShowExportModal(false)} />
       )}
 
       {/* Add Product - Fixed Button for Mobile */}

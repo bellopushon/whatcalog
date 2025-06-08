@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Menu, X } from 'lucide-react';
+import { ShoppingBag, Menu, X, Download } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import UserDropdown from '../profile/UserDropdown';
 import MobileSidebar from './MobileSidebar';
+import ExportProductsButton from '../products/ExportProductsButton';
+import { useLocation } from 'react-router-dom';
 
 interface AdminHeaderProps {
   isMobile?: boolean;
@@ -12,6 +14,10 @@ interface AdminHeaderProps {
 export default function AdminHeader({ isMobile = false }: AdminHeaderProps) {
   const { state } = useStore();
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const location = useLocation();
+  
+  // Determinar si estamos en la página de productos
+  const isProductsPage = location.pathname === '/admin/products';
 
   if (isMobile) {
     return (
@@ -42,6 +48,7 @@ export default function AdminHeader({ isMobile = false }: AdminHeaderProps) {
             </div>
 
             <div className="flex items-center gap-2">
+              {isProductsPage && <ExportProductsButton />}
               <UserDropdown />
             </div>
           </div>
@@ -69,6 +76,7 @@ export default function AdminHeader({ isMobile = false }: AdminHeaderProps) {
         </div>
 
         <div className="flex items-center gap-4">
+          {isProductsPage && <ExportProductsButton />}
           <UserDropdown />
         </div>
       </div>
