@@ -25,7 +25,7 @@ export default function StoreManager() {
   // Get plan limits
   const canCreateStore = () => {
     const userPlan = state.user?.plan || 'gratuito';
-    const currentStoreCount = state.stores.length;
+    const currentStoreCount = state.stores?.length || 0;
     
     switch (userPlan) {
       case 'gratuito':
@@ -62,7 +62,7 @@ export default function StoreManager() {
 
     try {
       // Check if this is the last store and user is on a paid plan
-      if (state.stores.length === 1 && (state.user?.plan === 'emprendedor' || state.user?.plan === 'profesional')) {
+      if ((state.stores?.length === 1) && (state.user?.plan === 'emprendedor' || state.user?.plan === 'profesional')) {
         error(
           'No puedes eliminar tu única tienda',
           'Los usuarios con plan de pago deben tener al menos una tienda activa.'
@@ -110,7 +110,7 @@ export default function StoreManager() {
         <div className="text-right">
           <div className="text-sm text-gray-500 admin-dark:text-gray-400">Tiendas</div>
           <div className="text-2xl font-bold text-gray-900 admin-dark:text-white">
-            {state.stores.length} / {getMaxStores()}
+            {state.stores?.length || 0} / {getMaxStores()}
           </div>
         </div>
       </div>
@@ -126,7 +126,7 @@ export default function StoreManager() {
           </div>
           <div>
             <h3 className="font-semibold text-gray-900 admin-dark:text-white">
-              {state.stores.length === 0 ? 'Crear Primera Tienda' : 'Añadir Nueva Tienda'}
+              {(state.stores?.length === 0) ? 'Crear Primera Tienda' : 'Añadir Nueva Tienda'}
             </h3>
             <p className="text-sm text-gray-600 admin-dark:text-gray-300">
               Expande tu negocio con un nuevo catálogo
@@ -141,7 +141,7 @@ export default function StoreManager() {
           <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white">Tus Tiendas</h2>
         </div>
 
-        {state.stores.length === 0 ? (
+        {(state.stores?.length === 0) ? (
           <div className="p-8 lg:p-12 text-center">
             <div className="w-16 h-16 bg-gray-100 admin-dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
               <Store className="w-8 h-8 text-gray-400" />
@@ -160,7 +160,7 @@ export default function StoreManager() {
           </div>
         ) : (
           <div className="divide-y divide-gray-200 admin-dark:divide-gray-700">
-            {state.stores.map((store) => (
+            {state.stores?.map((store) => (
               <div key={store.id} className="p-4 lg:p-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4 flex-1 min-w-0">
