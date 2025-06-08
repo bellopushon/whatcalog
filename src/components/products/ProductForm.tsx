@@ -12,7 +12,6 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
   const [formData, setFormData] = useState({
     name: product?.name || '',
     shortDescription: product?.shortDescription || '',
-    longDescription: product?.longDescription || '',
     price: product?.price || '',
     categoryId: product?.categoryId || '',
     mainImage: product?.mainImage || '',
@@ -123,7 +122,6 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
       const productData = {
         name: formData.name.trim(),
         shortDescription: formData.shortDescription.trim() || undefined,
-        longDescription: formData.longDescription.trim() || undefined,
         price: parseFloat(formData.price),
         categoryId: formData.categoryId || undefined,
         mainImage: formData.mainImage || undefined,
@@ -252,24 +250,6 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                       {formData.shortDescription.length}/100 caracteres
                     </p>
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 admin-dark:text-gray-300 mb-2">
-                    Descripción larga (opcional)
-                  </label>
-                  <textarea
-                    name="longDescription"
-                    value={formData.longDescription}
-                    onChange={handleInputChange}
-                    rows={4}
-                    maxLength={500}
-                    className="w-full px-4 py-3 border border-gray-300 admin-dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:text-white admin-dark:placeholder-gray-400"
-                    placeholder="Descripción detallada que aparecerá en el popup del producto"
-                  />
-                  <p className="text-xs text-gray-500 admin-dark:text-gray-400 mt-1">
-                    {formData.longDescription.length}/500 caracteres
-                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
