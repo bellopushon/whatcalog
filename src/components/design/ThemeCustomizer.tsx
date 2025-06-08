@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
-import { Palette, Monitor, Sun, Moon, Smartphone, Save } from 'lucide-react';
+import { Palette, Smartphone, Save } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useTheme, COLOR_PALETTES } from '../../contexts/ThemeContext';
 import { useToast } from '../../contexts/ToastContext';
 import { PRODUCTS_PER_PAGE_OPTIONS } from '../../utils/constants';
 
 export default function ThemeCustomizer() {
-  const { state, dispatch } = useStore();
+  const { state, updateStore } = useStore();
   const { currentPalette, borderRadius, applyTheme } = useTheme();
   const { success, error } = useToast();
   const store = state.currentStore;
   
-  const [selectedPalette, setSelectedPalette] = useState(store?.theme?.colorPalette || 'predeterminado');
-  const [selectedMode, setSelectedMode] = useState(store?.theme?.mode || 'light');
-  const [selectedRadius, setSelectedRadius] = useState(store?.theme?.borderRadius || 8);
-  const [productsPerPage, setProductsPerPage] = useState(store?.theme?.productsPerPage || 12);
+  const [selectedPalette, setSelectedPalette] = useState(store?.colorPalette || 'predeterminado');
+  const [selectedRadius, setSelectedRadius] = useState(store?.borderRadius || 8);
+  const [productsPerPage, setProductsPerPage] = useState(store?.productsPerPage || 12);
   const [isSaving, setIsSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -23,11 +22,6 @@ export default function ThemeCustomizer() {
     setHasUnsavedChanges(true);
     // Apply theme immediately for preview
     applyTheme(paletteId, selectedRadius);
-  };
-
-  const handleModeChange = (mode: string) => {
-    setSelectedMode(mode);
-    setHasUnsavedChanges(true);
   };
 
   const handleRadiusChange = (radius: number) => {
@@ -48,29 +42,24 @@ export default function ThemeCustomizer() {
     setIsSaving(true);
 
     try {
-      // Update the store with new theme settings
-      const updatedTheme = {
+      // Preparar datos para actualizar
+      const updateData = {
         colorPalette: selectedPalette,
-        mode: selectedMode,
         borderRadius: selectedRadius,
         productsPerPage: productsPerPage,
       };
 
-      dispatch({
-        type: 'UPDATE_STORE',
-        payload: {
-          theme: updatedTheme
-        }
-      });
+      // Actualizar tienda en Supabase
+      await updateStore(updateData);
 
       // Apply the theme
       applyTheme(selectedPalette, selectedRadius);
 
       setHasUnsavedChanges(false);
       success('¡Configuración guardada!', 'Los cambios de diseño se han aplicado correctamente');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error saving theme settings:', err);
-      error('Error al guardar', 'No se pudieron guardar los cambios. Intenta de nuevo.');
+      error('Error al guardar', err.message || 'No se pudieron guardar los cambios. Intenta de nuevo.');
     } finally {
       setIsSaving(false);
     }
@@ -133,22 +122,22 @@ export default function ThemeCustomizer() {
       </div>
 
       {/* Unsaved Changes Warning */}
-{hasUnsavedChanges && (
- <div className="bg-yellow-50 dark:bg-gray-800 border border-yellow-200 dark:border-gray-700 rounded-lg p-4">
-   <div className="flex items-center gap-2">
-     <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-     <p className="text-yellow-800 dark:text-yellow-400 text-sm font-medium">
-       Tienes cambios sin guardar. Haz clic en "Guardar Cambios" para aplicarlos permanentemente.
-     </p>
-   </div>
- </div>
-)}
+      {hasUnsavedChanges && (
+        <div className="bg-yellow-50 admin-dark:bg-yellow-900/20 border border-yellow-200 admin-dark:border-yellow-700 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+            <p className="text-yellow-800 admin-dark:text-yellow-200 text-sm font-medium">
+              Tienes cambios sin guardar. Haz clic en "Guardar Cambios" para aplicarlos permanentemente.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Color Palettes */}
       <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
         <div className="flex items-center gap-3 mb-4 lg:mb-6">
           <Palette className="w-6 h-6 text-indigo-600" />
-          <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white">Paletas de Colores Predefinidas</h2>
+          <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white">Paletas de Colores</h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -180,13 +169,12 @@ export default function ThemeCustomizer() {
                   )}
                 </div>
               </div>
-              {/* FIXED: Force dark text in light mode, light text in dark mode */}
-              <p className="text-xs leading-relaxed line-clamp-2 text-gray-700 admin-dark:text-gray-100">{palette.description}</p>
+              <p className="text-xs leading-relaxed line-clamp-2 text-gray-700 admin-dark:text-gray-300">{palette.description}</p>
             </div>
           ))}
         </div>
 
-        {/* Current Palette Preview - FIXED DARK MODE */}
+        {/* Current Palette Preview */}
         <div className="mt-6 p-4 bg-gray-50 admin-dark:bg-gray-700 rounded-lg">
           <h3 className="font-medium text-gray-900 admin-dark:text-white mb-2">Vista Previa del Tema Actual</h3>
           <div className="flex items-center gap-4">
@@ -195,16 +183,14 @@ export default function ThemeCustomizer() {
                 className="w-8 h-8 rounded-lg shadow-sm border border-gray-200 admin-dark:border-gray-600"
                 style={{ backgroundColor: currentPaletteData.primary }}
               ></div>
-              {/* FIXED: Force dark text in light mode, light text in dark mode */}
-              <span className="text-sm text-gray-700 admin-dark:text-gray-100">Primario</span>
+              <span className="text-sm text-gray-700 admin-dark:text-gray-300">Primario</span>
             </div>
             <div className="flex items-center gap-2">
               <div 
                 className="w-8 h-8 rounded-lg shadow-sm border border-gray-200 admin-dark:border-gray-600"
                 style={{ backgroundColor: currentPaletteData.secondary }}
               ></div>
-              {/* FIXED: Force dark text in light mode, light text in dark mode */}
-              <span className="text-sm text-gray-700 admin-dark:text-gray-100">Secundario</span>
+              <span className="text-sm text-gray-700 admin-dark:text-gray-300">Secundario</span>
             </div>
           </div>
         </div>
@@ -212,32 +198,6 @@ export default function ThemeCustomizer() {
 
       {/* Additional Configurations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-        {/* Color Scheme */}
-        <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
-          <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Esquema de Color (Modo)</h2>
-          
-          <div className="space-y-3">
-            {[
-              { id: 'light', label: 'Claro', icon: Sun },
-              { id: 'dark', label: 'Oscuro', icon: Moon },
-              { id: 'system', label: 'Sistema', icon: Monitor },
-            ].map((mode) => (
-              <label key={mode.id} className="flex items-center gap-3 cursor-pointer p-3 rounded-lg hover:bg-gray-50 admin-dark:hover:bg-gray-700 transition-colors">
-                <input
-                  type="radio"
-                  name="colorMode"
-                  value={mode.id}
-                  checked={selectedMode === mode.id}
-                  onChange={(e) => handleModeChange(e.target.value)}
-                  className="text-indigo-600 focus:ring-indigo-500"
-                />
-                <mode.icon className="w-5 h-5 text-gray-500 admin-dark:text-gray-400" />
-                <span className="text-sm font-medium text-gray-700 admin-dark:text-gray-300">{mode.label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-
         {/* Border Radius */}
         <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
           <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-4">Radio del Borde</h2>
@@ -272,40 +232,39 @@ export default function ThemeCustomizer() {
             </div>
           </div>
         </div>
+
+        {/* Products Per Page */}
+        <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Smartphone className="w-6 h-6 text-green-600" />
+            <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white">Productos por Página</h2>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <select
+              value={productsPerPage}
+              onChange={(e) => handleProductsPerPageChange(parseInt(e.target.value))}
+              className="px-4 py-2 border border-gray-300 admin-dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm lg:text-base admin-dark:bg-gray-700 admin-dark:text-white"
+            >
+              {PRODUCTS_PER_PAGE_OPTIONS.map(count => (
+                <option key={count} value={count}>
+                  {count} Productos
+                </option>
+              ))}
+            </select>
+            <span className="text-sm text-gray-600 admin-dark:text-gray-300">
+              Los clientes verán {productsPerPage} productos por página en tu catálogo
+            </span>
+          </div>
+        </div>
       </div>
 
-      {/* Products Per Page */}
-      <div className="bg-white admin-dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 admin-dark:border-gray-700 p-4 lg:p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <Smartphone className="w-6 h-6 text-green-600" />
-          <h2 className="text-lg font-semibold text-gray-900 admin-dark:text-white">Productos por Página</h2>
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-          <select
-            value={productsPerPage}
-            onChange={(e) => handleProductsPerPageChange(parseInt(e.target.value))}
-            className="px-4 py-2 border border-gray-300 admin-dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm lg:text-base admin-dark:bg-gray-700 admin-dark:text-white"
-          >
-            {PRODUCTS_PER_PAGE_OPTIONS.map(count => (
-              <option key={count} value={count}>
-                {count} Productos
-              </option>
-            ))}
-          </select>
-          <span className="text-sm text-gray-600 admin-dark:text-gray-300">
-            Los clientes verán {productsPerPage} productos por página en tu catálogo
-          </span>
-        </div>
-      </div>
-
-      {/* Preview Link - FIXED DARK MODE */}
+      {/* Preview Link */}
       {store && (
         <div className="bg-gradient-to-r from-indigo-50 to-purple-50 admin-dark:from-gray-800 admin-dark:to-gray-900 rounded-xl border border-indigo-200 admin-dark:border-indigo-800 p-4 lg:p-6">
           <div className="text-center">
             <h3 className="text-lg font-semibold text-gray-900 admin-dark:text-white mb-2">¿Quieres ver cómo se ve?</h3>
-            {/* FIXED: Force dark text in light mode, light text in dark mode */}
-            <p className="text-gray-700 admin-dark:text-gray-100 mb-4 text-sm lg:text-base">
+            <p className="text-gray-700 admin-dark:text-gray-300 mb-4 text-sm lg:text-base">
               Revisa tu catálogo con los cambios aplicados
             </p>
             <a
@@ -314,7 +273,7 @@ export default function ThemeCustomizer() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
             >
-              <Monitor className="w-5 h-5" />
+              <Palette className="w-5 h-5" />
               Ver Catálogo
             </a>
           </div>
