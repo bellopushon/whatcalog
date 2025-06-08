@@ -158,7 +158,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
             onClick={onClose}
             className="p-2 hover:bg-gray-100 admin-dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <ArrowLeft className="w-6 h-6" />
+            <ArrowLeft className="w-6 h-6 text-gray-900 admin-dark:text-white" />
           </button>
           <h1 className="text-2xl font-bold text-gray-900 admin-dark:text-white">Nuevo Producto</h1>
         </div>
@@ -190,7 +190,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
           onClick={onClose}
           className="p-2 hover:bg-gray-100 admin-dark:hover:bg-gray-700 rounded-lg transition-colors"
         >
-          <ArrowLeft className="w-6 h-6" />
+          <ArrowLeft className="w-6 h-6 text-gray-900 admin-dark:text-white" />
         </button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900 admin-dark:text-white">
@@ -264,12 +264,12 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                   value={formData.name}
                   onChange={handleInputChange}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
-                    errors.name ? 'border-red-300' : 'border-gray-300'
+                    errors.name ? 'border-red-300 admin-dark:border-red-500' : 'border-gray-300 admin-dark:border-gray-600'
                   }`}
                   placeholder="Ej: iPhone 15 Pro Max"
                   maxLength={100}
                 />
-                {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name}</p>}
+                {errors.name && <p className="text-red-500 admin-dark:text-red-400 text-sm mt-1">{errors.name}</p>}
               </div>
 
               <div>
@@ -283,12 +283,12 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                   onChange={handleInputChange}
                   maxLength={100}
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
-                    errors.shortDescription ? 'border-red-300' : 'border-gray-300'
+                    errors.shortDescription ? 'border-red-300 admin-dark:border-red-500' : 'border-gray-300 admin-dark:border-gray-600'
                   }`}
                   placeholder="Breve descripción para el catálogo"
                 />
                 <div className="flex justify-between items-center mt-1">
-                  {errors.shortDescription && <p className="text-red-500 text-sm">{errors.shortDescription}</p>}
+                  {errors.shortDescription && <p className="text-red-500 admin-dark:text-red-400 text-sm">{errors.shortDescription}</p>}
                   <p className="text-xs text-gray-500 admin-dark:text-gray-400 ml-auto">
                     {formData.shortDescription.length}/100 caracteres
                   </p>
@@ -308,11 +308,11 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                     min="0"
                     step="0.01"
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white admin-dark:placeholder-gray-400 ${
-                      errors.price ? 'border-red-300' : 'border-gray-300'
+                      errors.price ? 'border-red-300 admin-dark:border-red-500' : 'border-gray-300 admin-dark:border-gray-600'
                     }`}
                     placeholder="0.00"
                   />
-                  {errors.price && <p className="text-red-500 text-sm mt-1">{errors.price}</p>}
+                  {errors.price && <p className="text-red-500 admin-dark:text-red-400 text-sm mt-1">{errors.price}</p>}
                 </div>
 
                 <div>
@@ -324,7 +324,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                     value={formData.categoryId}
                     onChange={handleInputChange}
                     className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent admin-dark:bg-gray-700 admin-dark:border-gray-600 admin-dark:text-white ${
-                      errors.categoryId ? 'border-red-300' : 'border-gray-300'
+                      errors.categoryId ? 'border-red-300 admin-dark:border-red-500' : 'border-gray-300 admin-dark:border-gray-600'
                     }`}
                   >
                     <option value="">Seleccionar categoría</option>
@@ -334,7 +334,7 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                       </option>
                     ))}
                   </select>
-                  {errors.categoryId && <p className="text-red-500 text-sm mt-1">{errors.categoryId}</p>}
+                  {errors.categoryId && <p className="text-red-500 admin-dark:text-red-400 text-sm mt-1">{errors.categoryId}</p>}
                 </div>
               </div>
             </div>

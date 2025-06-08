@@ -137,32 +137,36 @@
 
 /* Fondos de color específicos */
 .admin-dark .bg-yellow-50 {
-  @apply bg-yellow-900 !important;
+  @apply bg-yellow-900/20 !important;
 }
 
 .admin-dark .bg-green-50 {
-  @apply bg-green-900 !important;
+  @apply bg-green-900/20 !important;
 }
 
 .admin-dark .bg-blue-50 {
-  @apply bg-blue-900 !important;
+  @apply bg-blue-900/20 !important;
 }
 
 .admin-dark .bg-indigo-50 {
-  @apply bg-gray-800 !important;
+  @apply bg-indigo-900/20 !important;
 }
 
 .admin-dark .bg-purple-50 {
-  @apply bg-gray-800 !important;
+  @apply bg-purple-900/20 !important;
 }
 
 .admin-dark .bg-orange-50 {
-  @apply bg-orange-900 !important;
+  @apply bg-orange-900/20 !important;
+}
+
+.admin-dark .bg-red-50 {
+  @apply bg-red-900/20 !important;
 }
 
 /* CRÍTICO: Contraste mejorado para colores problemáticos */
 .admin-dark .bg-amber-50 {
-  @apply bg-amber-900 !important;
+  @apply bg-amber-900/20 !important;
 }
 
 .admin-dark .text-amber-600 {
@@ -199,6 +203,55 @@
 
 .admin-dark .border-orange-200 {
   @apply border-orange-700 !important;
+}
+
+/* Mejoras de contraste para textos en fondos de color */
+.admin-dark .text-blue-800 {
+  @apply text-blue-200 !important;
+}
+
+.admin-dark .text-blue-900 {
+  @apply text-blue-100 !important;
+}
+
+.admin-dark .text-green-800 {
+  @apply text-green-200 !important;
+}
+
+.admin-dark .text-green-900 {
+  @apply text-green-100 !important;
+}
+
+.admin-dark .text-red-800 {
+  @apply text-red-200 !important;
+}
+
+.admin-dark .text-red-900 {
+  @apply text-red-100 !important;
+}
+
+.admin-dark .text-yellow-800 {
+  @apply text-yellow-200 !important;
+}
+
+.admin-dark .text-yellow-900 {
+  @apply text-yellow-100 !important;
+}
+
+.admin-dark .text-indigo-800 {
+  @apply text-indigo-200 !important;
+}
+
+.admin-dark .text-indigo-900 {
+  @apply text-indigo-100 !important;
+}
+
+.admin-dark .text-purple-800 {
+  @apply text-purple-200 !important;
+}
+
+.admin-dark .text-purple-900 {
+  @apply text-purple-100 !important;
 }
 
 /* Scrollbar personalizada */

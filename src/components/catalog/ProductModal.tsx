@@ -34,15 +34,15 @@ export default function ProductModal({ product, store, onClose, onAddToCart }: P
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl max-w-md w-full overflow-hidden">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Detalles del Producto</h2>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Detalles del Producto</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
           </button>
         </div>
 
@@ -56,8 +56,8 @@ export default function ProductModal({ product, store, onClose, onAddToCart }: P
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                <span className="text-gray-400">Sin imagen</span>
+              <div className="w-full h-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <span className="text-gray-400 dark:text-gray-500">Sin imagen</span>
               </div>
             )}
           </div>
@@ -95,7 +95,7 @@ export default function ProductModal({ product, store, onClose, onAddToCart }: P
 
         {/* Product Info */}
         <div className="p-4">
-          <h1 className="text-xl font-bold text-gray-900 mb-1">{product.name}</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{product.name}</h1>
           
           {/* Price with theme color */}
           <p 
@@ -106,13 +106,13 @@ export default function ProductModal({ product, store, onClose, onAddToCart }: P
           </p>
 
           {product.shortDescription && (
-            <p className="text-gray-600 mb-4">{product.shortDescription}</p>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">{product.shortDescription}</p>
           )}
 
           {/* Featured Badge */}
           {product.isFeatured && (
             <div className="mb-4">
-              <span className="inline-flex items-center gap-1 bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+              <span className="inline-flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 px-3 py-1 rounded-full text-sm font-medium">
                 ⭐ Producto Destacado
               </span>
             </div>

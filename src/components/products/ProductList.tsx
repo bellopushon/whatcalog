@@ -73,7 +73,6 @@ export default function ProductList() {
       const duplicatedProduct = {
         name: `${product.name} (Copia)`,
         shortDescription: product.shortDescription,
-        longDescription: product.longDescription,
         price: product.price,
         categoryId: product.categoryId,
         mainImage: product.mainImage,
