@@ -15,7 +15,7 @@ export default function LoginPage() {
 
   // ✅ CRITICAL: Redirect when user is authenticated
   useEffect(() => {
-    console.log('LoginPage - Auth state changed:', { 
+    console.log('🔄 LoginPage - Auth state changed:', { 
       isAuthenticated: state.isAuthenticated, 
       user: state.user?.email,
       isInitialized: state.isInitialized,
@@ -24,7 +24,7 @@ export default function LoginPage() {
     
     // Only redirect if fully initialized and authenticated
     if (state.isInitialized && state.isAuthenticated && state.user && !state.isLoading) {
-      console.log('User is authenticated, redirecting to admin...');
+      console.log('✅ User is authenticated, redirecting to admin...');
       navigate('/admin', { replace: true });
     }
   }, [state.isAuthenticated, state.user, state.isInitialized, state.isLoading, navigate]);
@@ -60,7 +60,7 @@ export default function LoginPage() {
     setErrors({}); // Clear previous errors
 
     try {
-      console.log('Form submitted:', { isRegister, email });
+      console.log('📝 Form submitted:', { isRegister, email });
       
       if (isRegister) {
         await register(email, password, name);
@@ -68,10 +68,10 @@ export default function LoginPage() {
         await login(email, password);
       }
       
-      console.log('Auth function completed successfully');
+      console.log('✅ Auth function completed successfully');
       
     } catch (error) {
-      console.error('Auth error:', error);
+      console.error('❌ Auth error:', error);
       setErrors({ general: error.message || 'Error de autenticación. Intenta de nuevo.' });
     }
   };

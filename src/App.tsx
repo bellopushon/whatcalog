@@ -45,7 +45,7 @@ function LoadingScreen() {
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { state } = useStore();
   
-  console.log('ProtectedRoute - Current state:', {
+  console.log('🔒 ProtectedRoute - Current state:', {
     isAuthenticated: state.isAuthenticated,
     user: state.user?.email,
     isLoading: state.isLoading,
@@ -53,18 +53,18 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   });
   
   // Show loading while initializing
-  if (!state.isInitialized || state.isLoading) {
-    console.log('Still initializing, showing loading screen');
+  if (!state.isInitialized) {
+    console.log('⏳ Still initializing, showing loading screen');
     return <LoadingScreen />;
   }
   
   // If not authenticated, redirect to login
   if (!state.isAuthenticated) {
-    console.log('User not authenticated, redirecting to login');
-    return <Navigate to="/login\" replace />;
+    console.log('❌ User not authenticated, redirecting to login');
+    return <Navigate to="/login" replace />;
   }
   
-  console.log('User is authenticated, rendering protected content');
+  console.log('✅ User is authenticated, rendering protected content');
   return <>{children}</>;
 }
 
@@ -73,7 +73,7 @@ function AppRoutes() {
   const { isDarkMode } = useTheme();
   const location = useLocation();
   
-  console.log('AppRoutes - Current state:', {
+  console.log('🚀 AppRoutes - Current state:', {
     isAuthenticated: state.isAuthenticated,
     user: state.user?.email,
     pathname: location.pathname,
@@ -114,7 +114,7 @@ function AppRoutes() {
   
   // Show loading screen while initializing
   if (!state.isInitialized) {
-    console.log('App not initialized, showing loading screen');
+    console.log('⏳ App not initialized, showing loading screen');
     return <LoadingScreen />;
   }
   
@@ -125,7 +125,7 @@ function AppRoutes() {
         path="/login" 
         element={
           state.isAuthenticated ? (
-            <Navigate to="/admin\" replace />
+            <Navigate to="/admin" replace />
           ) : (
             <LoginPage />
           )
@@ -170,7 +170,7 @@ function AppRoutes() {
         path="/" 
         element={
           state.isAuthenticated ? (
-            <Navigate to="/admin\" replace />
+            <Navigate to="/admin" replace />
           ) : (
             <Navigate to="/login" replace />
           )

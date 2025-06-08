@@ -441,136 +441,56 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Process authenticated user
-  const processAuthenticatedUser = async (supabaseUser: SupabaseUser, isNewUser = false) => {
-    try {
-      console.log('Processing authenticated user:', supabaseUser.email, 'isNewUser:', isNewUser);
-
-      // For new users, create the profile first
-      if (isNewUser) {
-        const { error: insertError } = await supabase
-          .from('users')
-          .insert({
-            id: supabaseUser.id,
-            email: supabaseUser.email!,
-            name: supabaseUser.user_metadata?.name || supabaseUser.email!.split('@')[0],
-            plan: 'gratuito',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-
-        if (insertError) {
-          console.error('Error creating user profile:', insertError);
-          // If user already exists, that's okay
-          if (insertError.code !== '23505') {
-            throw insertError;
-          }
-        }
-      } else {
-        // For existing users, update the profile
-        const { error: upsertError } = await supabase
-          .from('users')
-          .upsert({
-            id: supabaseUser.id,
-            email: supabaseUser.email!,
-            name: supabaseUser.user_metadata?.name || supabaseUser.email!.split('@')[0],
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'id'
-          });
-
-        if (upsertError) {
-          console.error('Error updating user profile:', upsertError);
-        }
-      }
-
-      // Wait a moment for the database to be consistent
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Load fresh user data from database
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', supabaseUser.id)
-        .single();
-
-      if (userError) {
-        console.error('Error loading user data after auth:', userError);
-        throw userError;
-      }
-
-      const appUser = transformSupabaseUserToAppUser(supabaseUser, userData);
-      
-      // Set authenticated state
-      dispatch({ 
-        type: 'SET_AUTH_STATE', 
-        payload: { 
-          isAuthenticated: true, 
-          user: appUser,
-          isInitialized: true
-        } 
-      });
-      
-      // Load stores
-      await loadUserData(supabaseUser.id);
-
-      console.log('User authentication processed successfully');
-    } catch (error) {
-      console.error('Error processing authenticated user:', error);
-      dispatch({ 
-        type: 'SET_AUTH_STATE', 
-        payload: { 
-          isAuthenticated: false, 
-          user: null,
-          isInitialized: true
-        } 
-      });
-    }
-  };
-
-  // Initialize auth
+  // Initialize auth - SIMPLIFIED VERSION
   useEffect(() => {
     let mounted = true;
-    let authInitialized = false;
 
     const initAuth = async () => {
       try {
-        console.log('Initializing authentication...');
+        console.log('🔄 Initializing authentication...');
 
-        // ✅ CRITICAL: Check for existing session first
+        // Get current session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Session error:', error);
-          if (mounted && !authInitialized) {
+          console.error('❌ Session error:', error);
+          if (mounted) {
             dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null, isInitialized: true } });
-            authInitialized = true;
           }
           return;
         }
 
         if (session?.user) {
-          console.log('Found existing session for user:', session.user.email);
-          if (mounted && !authInitialized) {
-            await processAuthenticatedUser(session.user, false);
-            authInitialized = true;
+          console.log('✅ Found existing session for:', session.user.email);
+          
+          // Load user data from database
+          const { data: userData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          const appUser = transformSupabaseUserToAppUser(session.user, userData);
+          
+          if (mounted) {
+            dispatch({ type: 'SET_USER', payload: appUser });
+            await loadUserData(session.user.id);
           }
         } else {
-          console.log('No existing session found');
-          if (mounted && !authInitialized) {
+          console.log('❌ No existing session found');
+          if (mounted) {
             dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null, isInitialized: true } });
-            authInitialized = true;
           }
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
-        if (mounted && !authInitialized) {
+        console.error('❌ Auth initialization error:', error);
+        if (mounted) {
           dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null, isInitialized: true } });
-          authInitialized = true;
         }
       }
     };
 
+    // Initialize immediately
     initAuth();
 
     // Listen for auth changes
@@ -578,34 +498,38 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       async (event, session) => {
         if (!mounted) return;
 
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('🔄 Auth state changed:', event, session?.user?.email);
 
         if (event === 'SIGNED_IN' && session?.user) {
-          console.log('User signed in:', session.user.email);
-          await processAuthenticatedUser(session.user, false);
-        } else if (event === 'SIGNED_UP' && session?.user) {
-          console.log('User signed up:', session.user.email);
-          await processAuthenticatedUser(session.user, true);
+          console.log('✅ User signed in:', session.user.email);
+          
+          // Create/update user profile
+          await supabase
+            .from('users')
+            .upsert({
+              id: session.user.id,
+              email: session.user.email!,
+              name: session.user.user_metadata?.name || session.user.email!.split('@')[0],
+              plan: 'gratuito',
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'id'
+            });
+
+          // Load user data
+          const { data: userData } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          const appUser = transformSupabaseUserToAppUser(session.user, userData);
+          dispatch({ type: 'SET_USER', payload: appUser });
+          await loadUserData(session.user.id);
+
         } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out');
+          console.log('❌ User signed out');
           dispatch({ type: 'LOGOUT' });
-        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          // ✅ CRITICAL: Handle token refresh without re-processing
-          console.log('Token refreshed for user:', session.user.email);
-          // Don't re-process user data on token refresh if already authenticated
-          if (!state.isAuthenticated) {
-            await processAuthenticatedUser(session.user, false);
-          }
-        } else if (event === 'INITIAL_SESSION') {
-          // Handle initial session - this is called after getSession()
-          if (session?.user && !state.isAuthenticated && !authInitialized) {
-            console.log('Processing initial session for:', session.user.email);
-            await processAuthenticatedUser(session.user, false);
-            authInitialized = true;
-          } else if (!session && !authInitialized) {
-            dispatch({ type: 'SET_AUTH_STATE', payload: { isAuthenticated: false, user: null, isInitialized: true } });
-            authInitialized = true;
-          }
         }
       }
     );
@@ -618,7 +542,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // Login function
   const login = async (email: string, password: string) => {
-    console.log('Attempting login for:', email);
+    console.log('🔄 Attempting login for:', email);
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
@@ -628,16 +552,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) {
-        console.error('Login error:', error);
-        dispatch({ type: 'SET_LOADING', payload: false });
+        console.error('❌ Login error:', error);
         throw new Error(error.message);
       }
 
-      console.log('Login successful for:', email);
-      // The auth state change listener will handle the rest
+      console.log('✅ Login successful for:', email);
       
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('❌ Login failed:', error);
       dispatch({ type: 'SET_LOADING', payload: false });
       throw error;
     }
@@ -645,7 +567,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // Register function
   const register = async (email: string, password: string, name: string) => {
-    console.log('Attempting registration for:', email);
+    console.log('🔄 Attempting registration for:', email);
     dispatch({ type: 'SET_LOADING', payload: true });
     
     try {
@@ -661,16 +583,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (error) {
-        console.error('Registration error:', error);
-        dispatch({ type: 'SET_LOADING', payload: false });
+        console.error('❌ Registration error:', error);
         throw new Error(error.message);
       }
 
-      console.log('Registration successful for:', email);
-      // The auth state change listener will handle the rest
+      console.log('✅ Registration successful for:', email);
       
     } catch (error) {
-      console.error('Registration failed:', error);
+      console.error('❌ Registration failed:', error);
       dispatch({ type: 'SET_LOADING', payload: false });
       throw error;
     }
@@ -678,15 +598,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // Logout function
   const logout = async () => {
-    console.log('Logging out...');
+    console.log('🔄 Logging out...');
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
       dispatch({ type: 'LOGOUT' });
-      console.log('Logout successful');
+      console.log('✅ Logout successful');
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('❌ Error signing out:', error);
       throw error;
     }
   };
