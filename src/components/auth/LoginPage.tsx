@@ -41,12 +41,12 @@ export default function LoginPage() {
     clearError();
   }, [mode, clearError]);
 
-  // Mostrar error de autenticación
-  useEffect(() => {
-    if (authError) {
-      setErrors({ general: authError.message });
-    }
-  }, [authError]);
+// Mostrar error de autenticación
+useEffect(() => {
+  if (authError) {
+    setErrors({ general: authError.message });
+  }
+}, [authError?.message]); // <-- CAMBIO AQUÍ
 
   // Validación del formulario
   const validateForm = (): boolean => {
