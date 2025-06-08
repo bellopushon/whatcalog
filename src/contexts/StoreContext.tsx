@@ -380,6 +380,15 @@ function transformSupabaseStoreToAppStore(
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(storeReducer, initialState);
+  const { user: authUser } = useAuth();
+
+// Load stores when auth user changes
+useEffect(() => {
+  if (authUser?.id) {
+    dispatch({ type: 'SET_USER', payload: authUser as any });
+    loadUserDataInBackground(authUser.id);
+  }
+}, [authUser?.id]);
 
   // 🔍 LOGGING: Add comprehensive logging
   const log = (message: string, data?: any) => {
