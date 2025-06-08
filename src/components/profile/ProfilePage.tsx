@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, Camera, Save, Lock, Eye, EyeOff, User, Mail, Phone, Calendar, MapPin, Building } from 'lucide-react';
 import { useStore } from '../../contexts/StoreContext';
 import { useToast } from '../../contexts/ToastContext';
+import { supabase } from '../../lib/supabase';
 
 export default function ProfilePage() {
   const { state, dispatch } = useStore();
@@ -122,8 +123,45 @@ export default function ProfilePage() {
     setIsSaving(true);
 
     try {
+      // Get current user
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      
+      if (!currentUser) {
+        throw new Error('No user found');
+      }
+
+      // Update user profile in database
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({
+          name: formData.name.trim(),
+          phone: formData.phone.trim() || null,
+          bio: formData.bio.trim() || null,
+          avatar: formData.avatar || null,
+          company: formData.company.trim() || null,
+          location: formData.location.trim() || null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentUser.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      // Update email if changed
+      if (formData.email !== user?.email) {
+        const { error: emailError } = await supabase.auth.updateUser({
+          email: formData.email.trim()
+        });
+
+        if (emailError) {
+          throw emailError;
+        }
+      }
+
+      // Update local state
       const updatedUser = {
-        ...user,
+        ...user!,
         ...formData,
         updatedAt: new Date().toISOString(),
       };
@@ -146,8 +184,14 @@ export default function ProfilePage() {
     setIsSaving(true);
 
     try {
-      // In a real app, this would make an API call to change the password
-      // For demo purposes, we'll just show a success message
+      const { error: passwordError } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      });
+
+      if (passwordError) {
+        throw passwordError;
+      }
+
       success('¡Contraseña actualizada!', 'Tu contraseña se ha cambiado correctamente');
       setPasswordData({
         currentPassword: '',
@@ -214,11 +258,13 @@ export default function ProfilePage() {
             <p className="text-gray-600 admin-dark:text-gray-300">{formData.email}</p>
             <div className="flex items-center gap-4 mt-2">
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                user?.plan === 'premium' 
-                  ? 'bg-yellow-100 text-yellow-800 admin-dark:bg-yellow-900 admin-dark:text-yellow-200' 
+                user?.plan === 'profesional' 
+                  ? 'bg-purple-100 text-purple-800 admin-dark:bg-purple-900 admin-dark:text-purple-200'
+                  : user?.plan === 'emprendedor'
+                  ? 'bg-blue-100 text-blue-800 admin-dark:bg-blue-900 admin-dark:text-blue-200' 
                   : 'bg-gray-100 text-gray-600 admin-dark:bg-gray-700 admin-dark:text-gray-300'
               }`}>
-                Plan {user?.plan === 'premium' ? 'Premium' : 'Gratis'}
+                Plan {user?.plan === 'profesional' ? 'Profesional' : user?.plan === 'emprendedor' ? 'Emprendedor' : 'Gratis'}
               </span>
               
               {user?.createdAt && (
@@ -488,15 +534,15 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-           <div className="bg-blue-50 dark:bg-gray-800 border border-blue-200 dark:border-gray-700 rounded-lg p-4">
- <h4 className="font-medium text-blue-900 dark:text-blue-400 mb-2">Consejos de seguridad:</h4>
- <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
-   <li>• Usa al menos 8 caracteres</li>
-   <li>• Incluye mayúsculas, minúsculas y números</li>
-   <li>• Evita información personal obvia</li>
-   <li>• No reutilices contraseñas de otras cuentas</li>
- </ul>
-</div>
+              <div className="bg-blue-50 dark:bg-gray-800 border border-blue-200 dark:border-gray-700 rounded-lg p-4">
+                <h4 className="font-medium text-blue-900 dark:text-blue-400 mb-2">Consejos de seguridad:</h4>
+                <ul className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
+                  <li>• Usa al menos 8 caracteres</li>
+                  <li>• Incluye mayúsculas, minúsculas y números</li>
+                  <li>• Evita información personal obvia</li>
+                  <li>• No reutilices contraseñas de otras cuentas</li>
+                </ul>
+              </div>
 
               <div className="flex justify-end">
                 <button
