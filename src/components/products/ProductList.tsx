@@ -14,8 +14,9 @@ export default function ProductList() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState<string | null>(null);
   
-  const { state, updateProduct, deleteProduct, getMaxProducts } = useStore();
+  const { state, updateProduct, deleteProduct, getMaxProducts, createProduct } = useStore();
   const { success, error } = useToast();
 
   const store = state.currentStore;
@@ -71,9 +72,13 @@ export default function ProductList() {
 
   const handleDuplicateProduct = async (product: any) => {
     try {
+      setIsDuplicating(product.id);
+      
+      // Create a duplicate product with "(Copia)" appended to the name
       const duplicatedProduct = {
         name: `${product.name} (Copia)`,
         shortDescription: product.shortDescription,
+        longDescription: product.longDescription,
         price: product.price,
         categoryId: product.categoryId,
         mainImage: product.mainImage,
@@ -82,12 +87,18 @@ export default function ProductList() {
         isFeatured: false, // Reset featured status for duplicates
       };
 
-      // This will be handled by createProduct in the context
-      // For now, we'll show a message that this feature is coming soon
-      success('Función próximamente', 'La duplicación de productos estará disponible pronto');
+      // Create the new product
+      await createProduct(duplicatedProduct);
+      
+      success(
+        '¡Producto duplicado!', 
+        `Se ha creado una copia de "${product.name}"`
+      );
     } catch (err: any) {
       console.error('Error duplicating product:', err);
-      error('Error al duplicar', err.message || 'No se pudo duplicar el producto.');
+      error('Error al duplicar', err.message || 'No se pudo duplicar el producto. Intenta de nuevo.');
+    } finally {
+      setIsDuplicating(null);
     }
   };
 
@@ -280,10 +291,16 @@ export default function ProductList() {
                         
                         <button
                           onClick={() => handleDuplicateProduct(product)}
-                          className="p-1.5 text-gray-500 admin-dark:text-gray-400 hover:text-blue-600 admin-dark:hover:text-blue-400"
+                          disabled={isDuplicating === product.id || !canCreateProduct}
+                          className="p-1.5 text-gray-500 admin-dark:text-gray-400 hover:text-blue-600 admin-dark:hover:text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label="Duplicar"
+                          title={!canCreateProduct ? "Has alcanzado el límite de productos" : "Duplicar producto"}
                         >
-                          <Copy className="w-4 h-4" />
+                          {isDuplicating === product.id ? (
+                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                          ) : (
+                            <Copy className="w-4 h-4" />
+                          )}
                         </button>
                         
                         <button
