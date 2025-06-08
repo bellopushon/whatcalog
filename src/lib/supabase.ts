@@ -11,7 +11,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true
+    detectSessionInUrl: true,
+    // ✅ CRITICAL: Force session persistence
+    storage: window.localStorage,
+    storageKey: 'tutaviendo-auth-token',
+    flowType: 'pkce'
   }
 });
 

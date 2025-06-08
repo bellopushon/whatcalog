@@ -503,7 +503,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       try {
         console.log('Initializing authentication...');
 
-        // Get current session
+        // ✅ CRITICAL: Check for existing session first
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -552,6 +552,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         } else if (event === 'SIGNED_OUT') {
           console.log('User signed out');
           dispatch({ type: 'LOGOUT' });
+        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          // ✅ CRITICAL: Handle token refresh without re-processing
+          console.log('Token refreshed for user:', session.user.email);
+          // Don't re-process user data on token refresh if already authenticated
+          if (!state.isAuthenticated) {
+            await processAuthenticatedUser(session.user);
+          }
         }
       }
     );
