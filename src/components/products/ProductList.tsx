@@ -75,6 +75,7 @@ export default function ProductList() {
       setIsDuplicating(product.id);
       
       // Create a duplicate product with "(Copia)" appended to the name
+      // Set isActive to false by default to prevent it from appearing in the live catalog
       const duplicatedProduct = {
         name: `${product.name} (Copia)`,
         shortDescription: product.shortDescription,
@@ -83,7 +84,7 @@ export default function ProductList() {
         categoryId: product.categoryId,
         mainImage: product.mainImage,
         gallery: product.gallery,
-        isActive: product.isActive,
+        isActive: false, // Set to inactive by default for review
         isFeatured: false, // Reset featured status for duplicates
       };
 
@@ -92,7 +93,7 @@ export default function ProductList() {
       
       success(
         '¡Producto duplicado!', 
-        `Se ha creado una copia de "${product.name}"`
+        `Se ha creado una copia de "${product.name}" en estado inactivo. Edítalo antes de activarlo.`
       );
     } catch (err: any) {
       console.error('Error duplicating product:', err);
@@ -220,7 +221,7 @@ export default function ProductList() {
               <div key={product.id} className="bg-white admin-dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 admin-dark:border-gray-700 overflow-hidden">
                 <div className="flex items-center">
                   {/* Product Image - Thumbnail */}
-                  <div className="w-16 h-16 bg-gray-100 admin-dark:bg-gray-700 flex-shrink-0">
+                  <div className="w-16 h-16 bg-gray-100 admin-dark:bg-gray-700 flex-shrink-0 relative">
                     {product.mainImage ? (
                       <img
                         src={product.mainImage}
@@ -230,6 +231,13 @@ export default function ProductList() {
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Package className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
+                    {!product.isActive && (
+                      <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                        <span className="bg-red-500 text-white text-xs px-1 py-0.5 rounded">
+                          Oculto
+                        </span>
                       </div>
                     )}
                   </div>
