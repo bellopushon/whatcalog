@@ -46,7 +46,7 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) return;
@@ -75,6 +75,7 @@ export default function LoginPage() {
         if (error) {
           console.error('Registration error:', error);
           setErrors({ general: error.message || 'Error al crear la cuenta. Intenta de nuevo.' });
+          setIsLoading(false);
           return;
         }
 
@@ -83,6 +84,7 @@ export default function LoginPage() {
           setErrors({ 
             general: 'Te hemos enviado un email de confirmación. Por favor revisa tu bandeja de entrada.' 
           });
+          setIsLoading(false);
           return;
         }
 
@@ -101,6 +103,7 @@ export default function LoginPage() {
         if (error) {
           console.error('Login error:', error);
           setErrors({ general: 'Email o contraseña incorrectos.' });
+          setIsLoading(false);
           return;
         }
 
@@ -113,6 +116,7 @@ export default function LoginPage() {
       setErrors({ general: 'Error de conexión. Por favor intenta de nuevo.' });
       setIsLoading(false);
     }
+
     // ✅ IMPORTANTE: No setear isLoading(false) aquí para mantener el estado de carga hasta la redirección
   };
 
