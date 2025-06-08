@@ -384,9 +384,13 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
 // Load stores when auth user changes
 // Initialize user data when component mounts
+// Initialize user data when component mounts
 useEffect(() => {
   const initializeUserData = async () => {
     try {
+      // Set loading to false first so UI renders
+      dispatch({ type: 'SET_LOADED', payload: true });
+      
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
@@ -402,13 +406,27 @@ useEffect(() => {
           dispatch({ type: 'SET_USER', payload: appUser });
           
           // Load stores
-          await loadUserDataInBackground(user.id);
+          const { data: storesData } = await supabase
+            .from('stores')
+            .select('*, products(*), categories(*)')
+            .eq('user_id', user.id);
+            
+          if (storesData && storesData.length > 0) {
+            const transformedStores = storesData.map(store => 
+              transformSupabaseStoreToAppStore(
+                store,
+                store.products || [],
+                store.categories || []
+              )
+            );
+            
+            dispatch({ type: 'SET_STORES', payload: transformedStores });
+            dispatch({ type: 'SET_CURRENT_STORE', payload: transformedStores[0] });
+          }
         }
       }
     } catch (error) {
       console.error('Error initializing user data:', error);
-    } finally {
-      dispatch({ type: 'SET_LOADED', payload: true });
     }
   };
   
